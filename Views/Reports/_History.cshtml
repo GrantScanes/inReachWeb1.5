@@ -1,0 +1,36 @@
+﻿@using System.Web.Script.Serialization
+@model inReachWebRebuild.ViewModels.HistoryViewModel
+@{ var serializer = new JavaScriptSerializer(); }
+<div class="listview-outlook" data-role="listview">
+    @foreach (var item in Model.History)
+    {
+        <div class="list-group collapsed" >
+            <span class="list-group-toggle">@item.Title at @item.StartDateTime.ToString("dd MMM yyyy") at @item.StartDateTime.ToString("HH:mm:ss")</span>
+            <div class="list-group-content">
+                @foreach (var step in item.Steps)
+                {
+                    <div class="list">
+                        <div class="list-content">
+                            <span class="list-title">@step.Title</span>
+                            <span class="list-subtitle">Started at @step.StartDateTime.ToString("dd MMM yyyy") at @step.StartDateTime.ToString("HH:mm:ss")</span>
+                            @if (!string.IsNullOrEmpty(step.DownloadLocation))
+                            {
+                                <span class="list-remark" style="height: auto">@step.Message</span>
+                                <button class="button rounded" onclick="DownloadexportFile('@step.DownloadLocation.Replace(@"\", @"\\")');"><span class="mif-file-download"></span></button>
+                            }
+                            else
+                            {
+                                <span class="list-remark" style="height: auto">@step.Message</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+</div>
+<script type="text/javascript">
+
+
+</script>

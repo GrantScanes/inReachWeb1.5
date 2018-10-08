@@ -1,0 +1,49 @@
+﻿@using Infor.Model.ApplicationServices
+@model inReachWebRebuild.ViewModels.SettingViewModel
+@{
+    var setting = Model.Setting;
+}    
+
+<div class="cell @($"size{setting.DisplayColumnSpan}") padding10">
+    <span class=" caption">@setting.Title</span>
+    <span class="mif-question fg-blue" data-role="hint" data-hint-background="bg-blue" data-hint-color="fg-white" data-hint-mode="1"     data-hint="@setting.Desciption"> </span>
+    <br />
+    @switch (setting.Type)
+    {
+        case InforSettingTypes.Number:
+        case InforSettingTypes.Text:
+            <div class="input-control text" style="width: 100%">
+                <input type="text" id="@setting.Key" placeholder="@setting.Title" class="DataProp" value="@setting.ValueAsString">
+            </div>
+            break;
+        case InforSettingTypes.Date:
+            break;
+        case InforSettingTypes.DateTime:
+            break;
+        case InforSettingTypes.Lookup:
+            <div class="input-control select">
+                <select id="@setting.Key" class="DataProp">
+                    @foreach (var o in setting.OptionValues)
+                    {
+                        <option value="@o" @(setting.ValueAsString != null ? o == setting.ValueAsString ? "selected" : "" : "")>@o</option>
+                    }
+
+                </select>
+            </div>
+            break;
+        case InforSettingTypes.Boolean:
+            <label class="switch">
+                <input type="checkbox" id="@setting.Key" class="DataProp" checked="@setting.ValueAsBoolean">
+                <span class="check"></span>
+            </label>
+            break;
+        case InforSettingTypes.Password:
+            <div class="input-control text" style="width: 100%">
+                <input type="password" id="@setting.Key" placeholder="@setting.Title" class="DataProp" value="@setting.ValueAsString">
+            </div>
+            break;
+        default:
+            throw new ArgumentOutOfRangeException();
+    }
+</div>
+

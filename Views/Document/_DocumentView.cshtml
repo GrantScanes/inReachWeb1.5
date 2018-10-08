@@ -1,0 +1,58 @@
+﻿@using inReachWebRebuild.Models
+@model inReachWebRebuild.ViewModels.FileViewModel
+
+@{
+    var appUserState = (AppUserState) ViewData["UserState"];
+}
+@if (Model.Edit)
+{
+    <span id="lblActionsTitle" style="margin-bottom: 25px;font-size: medium; font-weight: bold;"> @($"Editing {Model.RecordNumber} - {Model.Title}" )</span>
+
+}
+else
+{
+    <span id="lblActionsTitle" style="margin-bottom: 25px;font-size: medium; font-weight: bold;"> @($"Viewing {Model.RecordNumber} - {Model.Title}")</span>
+
+}
+<div style="float: right; margin-bottom: 3px;">
+    
+    <button class="cycle-button bg-blue fg-white bg-active-darkBlue" id="EditWSButton" data-role="hint"   data-hint="Edit">
+        <span class="mif-pencil"></span>
+        @*<span class="title">Edit</span>*@
+    </button>
+    <button class="cycle-button bg-blue fg-yellow bg-active-darkBlue" id="ViewWSButton" data-role="hint"   data-hint="View">
+        <span class="mif-search"></span>
+        @*<span class="title">View</span>*@
+    </button>
+    <button class="cycle-button bg-lightGreen fg-white bg-active-darkBlue" id="CheckinWSButton" data-role="hint"   data-hint="Checkin">
+        <span class="mif-versions"></span>
+        @*<span class="title">Check-In</span>*@
+    </button>
+    <button class="cycle-button bg-orange fg-white bg-active-darkBlue" id="CancelEditWSButton" data-role="hint"   data-hint="Cancel">
+        <span class="mif-cancel"></span>
+        @*<span class="title">Cancel</span>*@
+    </button>
+</div>
+<div style="margin-bottom: 10px; " ></div>
+<div style="display: none;  width: 100%" id="DocumentModelContainer" data-model="@Json.Encode(Model)"></div>
+<div id="placeholder"  ></div>
+@*@if (Model.Edit)
+    {
+        <div id="WorkSpaceSplitter" style="height: 100%; ">
+            <div style="width: 20%; height: 100%;float: left">
+                <div class="treeview" data-role="treeview" data-on-click="nodeClicked" data-on-expand="nodeExpanded" style="height: 93%; overflow: auto" id="RecordPropertiesTree">
+                    <div data-role="preloader" data-type="cycle" data-style="color" id="PropertiesTreelPL" style="display: none; height: 100%; width: 100%;"></div>
+                    <div id="RecordPropertiesPartial"></div>
+                </div>
+            </div>
+
+                <div id="placeholder" ></div>
+
+
+        </div>
+    }
+    else
+    {
+        <div id="placeholder" ></div>
+
+     }*@ 

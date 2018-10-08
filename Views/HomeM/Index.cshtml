@@ -1,0 +1,2777 @@
+﻿tileclicked@using System.Web.Script.Serialization
+@using System.Web.Script.Serialization
+@using inReachWebRebuild.Models
+@using Infor.Model.ApplicationServices
+@model inReachWebRebuild.ViewModels.HomeMViewModel
+@{ var serializer = new JavaScriptSerializer(); }
+@{
+    ViewBag.Title = "inReach Web";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@{
+    var appUserState = (AppUserState) ViewData["UserState"];
+}
+<div class="app-bar fixed-top bg-black" data-role="appbar" data-flexstyle="sidebar2" style="z-index: 10000;">
+    <a class="app-bar-element branding" href="#" onclick="HomeClicked()" style="padding-left: 2px; padding-right: 2px;">
+        <img src="~/Content/Images/Apps/inTouch Logo.png" style="height: 50px; margin-bottom: 5px;" alt="">
+    </a>
+    <a href="#" class="app-bar-element" style="padding-left: 5px; padding-right: 5px;">
+        <span id="toggle-tiles-dropdown" class="mif-apps mif-2x"></span>
+        <div class="app-bar-drop-container" data-role="dropdown" data-toggle-element="#toggle-tiles-dropdown" data-no-close="false" style="display: none; width: 164px;">
+            <div id="QuickTilesPartial"></div>
+        </div>
+    </a>
+    @*<a href="#" class="app-bar-element" style="padding-left: 5px; padding-right: 5px;">
+        <span id="toggle-Dash-dropdown" class="mif-chart-pie mif-2x"></span>
+        <div class="app-bar-drop-container" data-role="dropdown" data-toggle-element="#toggle-Dash-dropdown" data-no-close="false" style="display: none; width: 164px;">
+            <div id="QuickGaugePartial" class="bg-black">
+                <div id="@($"chart{"1"}")" style="height: 150px; width: 150px"></div>
+                <div id="@($"chart{"2"}")" style="height: 150px; width: 150px"></div>
+                <div id="@($"chart{"3"}")" style="height: 150px; width: 150px; z-index: 1000001"></div>
+            </div>
+        </div>
+    </a>*@
+    <ul class="app-bar-menu">
+        @if (Model.AppTiles != null && Model.AppTiles.Any())
+        {
+            foreach (var app in Model.AppTiles.OrderBy(a => a.DisplayOrder))
+            {
+                <li data-flexorderorigin="3" data-flexorder="4" class="">
+                    <a href="#" class="dropdown-toggle">@app.Title</a>
+                    <ul class="d-menu" data-role="dropdown" style="max-width: none">
+                        @foreach (var tile in app.AppTiles.OrderBy(at => at.DisplayOrder))
+                        {
+                            if (tile.Search != null)
+                            {
+                                <li >
+                                    <a href="#" id="menuitem_@tile.Title" onclick="TileClicked(event, '@tile.Title', '@serializer.Serialize(tile.Search)', '@app.Title')">
+                                        <span class="@tile.Search.Css" style="width: auto;"></span>
+                                        @tile.Title
+                                        @if (!Model.UserTiles[0].AppTiles.ContainsTitle(tile.Title))
+                                        {
+                                            <span class="mif-pin" onclick="pinUserTile(event, '@tile.Title');" id="pinSpan_@tile.Title.Replace(" ", "_")"></span>
+                                        }
+                                        else
+                                        {
+                                            <span class="mif-pin" onclick="pinUserTile(event, '@tile.Title');" id="pinSpan_@tile.Title.Replace(" ", "_")" style="display: none;"></span>
+                                        }
+
+                                    </a>
+                                </li>
+                        @*<li data-flexorderorigin="0" data-flexorder="1" class=""><a href=""><span class="@tile.Search.Css"></span> @tile.Title</a></li>*@
+                        @*<li class="@tile.Search.MenuItemCss">
+                                <a href="#" onclick="TileClicked('@tile.Title', '@serializer.Serialize(tile.Search)', '@app.Title')" id="@tile.Title" data-title="@tile.Title" data-img="@Url.Content(tile.IconUrl)" data-css="@tile.Search.Css" data-background="@tile.Search.Background">
+                                    <span class="@tile.Search.Css"></span>
+                                    <span class="title">@tile.Title</span>
+                                </a>
+                            </li>*@
+                            }
+                        }
+                    </ul>
+                </li>
+            }
+        }
+
+    </ul>
+    <div class="app-bar-pullbutton automatic" style="display: none;"></div>
+
+    <ul class="app-bar-menu place-right" data-flexdirection="reverse">
+        @if (Model.ShowSearch)
+        {
+            <li data-flexorderorigin="0" data-flexorder="1" class="">
+
+                <div class="input-control text" style="width: 200px">
+                    <input type="text" id="quickSearch" placeholder="Search..." onkeypress="return searchKeyPress(event);">
+                    <button class="button" onclick="quickSearch($('#quickSearch').val())">
+                        <span class="mif-search"></span>
+                    </button>
+                </div>
+
+            </li>
+        }
+        <li data-flexorderorigin="1" data-flexorder="2" class="" style="padding-left: 5px; padding-right: 3px;">
+
+            @if (Model.User == null || string.IsNullOrEmpty(Model.User.UserImgPath))
+            {
+                <span class="icon mif-user mif-4x fg-emerald" onclick="UserClick(event)" style="font-size: 40px; height: 50px; margin-bottom: 15px; margin-left: 5px; padding-right: 5px;"></span>
+            }
+            else
+            {
+                <img src="@Model.User.UserImgPath" style="height: 45px; margin-bottom: 6px;" onclick="UserClick(event)">
+            }
+
+        </li>
+    </ul>
+
+
+    <div class="clearfix" style="width: 0;"></div>
+    <nav class="app-bar-pullmenu hidden flexstyle-sidebar2 bg-black" style="display: none;">
+        <ul class="app-bar-pullmenubar sidebar2 hidden bg-black" style="display: none;"></ul><ul class="app-bar-pullmenubar sidebar2 hidden bg-black" style="display: none;"></ul>
+    </nav>
+</div>
+<div style="display: none; width: 100%" id="ErrorModelContainer" data-model="@Json.Encode(Model.ErrorDisplay)"></div>
+@*<div style="color: white; display: @(Model.ErrorDisplay.HasMessage ? "block" : "none"); padding-top: 80px;">
+    @Html.Raw(Model.ErrorDisplay.Show(400, false))
+</div>*@
+<div data-role="charm" data-position="right" id="ReasignActionCharm" style="max-width: 80%; min-width: 80%; z-index: 30001" data-outside="false" class="bg-grayDarker">
+    <div data-role="preloader" data-type="cycle" data-style="color" id="ReasignActionPartialPL" style="display: none; height: 100%; width: 100%;"></div>
+    <div id="ReasignActionPartial" style="height: 100%; margin-top: 30px;"></div>
+</div>
+<div data-role="charm" data-position="right" id="LocationCharm" data-on-hide="HideProcessAction('true')" style="max-width: 80%; min-width: 80%; z-index: 30001" data-outside="false" class="bg-grayDarker">
+    <div data-role="preloader" data-type="cycle" data-style="color" id="ReassignPartialPL" style="display: none; height: 100%; width: 100%;"></div>
+    <div id="ReassignPartial" style="height: 100%; margin-top: 30px;"></div>
+</div>
+<div data-role="charm" data-position="right" id="ActionsCharm" style="min-width: 100%; z-index: 30000" data-outside="false" class="bg-grayDark">
+    <div data-role="preloader" data-type="cycle" data-style="color" id="ActionsPartialPL" style="display: none; height: 100%; width: 100%;"></div>
+    <div id="ActionsPartial" style="height: 100%; margin-top: 30px;"></div>
+</div>
+<div data-role="charm" data-position="right" id="ProcessCharm" style="min-width: 100%; z-index: 29999" data-outside="false" class="bg-grayDark">
+    <div data-role="preloader" data-type="cycle" data-style="color" id="ProcessPartialPL" style="display: none; height: 100%; width: 100%;"></div>
+    <div id="ProcessPartial" style="height: 100%; margin-top: 30px;"></div>
+</div>
+<div data-role="charm" data-position="right" id="ProcessActionsCharm" style="border-left-color: red; border-left-style: solid; border-left-width: 2px; min-width: 100%; z-index: 29999;" data-outside="false" class="bg-grayDark">
+    <div data-role="preloader" data-type="cycle" data-style="color" id="ProcessActionsPL" style="display: none; height: 100%; width: 100%;"></div>
+</div>
+<div data-role="charm" data-position="right" id="fileuploadCharm" style="min-width: 100%; z-index: 30000;" data-outside="false" class="bg-grayDark">
+    <div data-role="preloader" data-type="cycle" data-style="color" id="fileuploadCharmPL" style="display: none; height: 100%; width: 100%;"></div>
+    <div class="input-control file" data-role="input" style="margin-top: 30px; width: 95%;">
+        <input type="file" id="documentUpload"/>
+        <button class="button">
+            <span class="mif-folder"></span>
+        </button>
+    </div>
+    <div class="tile-small bg-cyan fg-white" data-role="tile" style="margin-left: 0">
+        <div class="tile-content iconic">
+            <span class="icon mif-floppy-disk" id="UploadFileButton"></span>
+        </div>
+    </div>
+</div>
+<div data-role="charm" data-position="right" id="workspace" style="min-width: 100%; z-index: 30000" data-on-hide="HideCharm('true')" data-outside="false" class="bg-grayDark">
+    <div data-role="preloader" data-type="cycle" data-style="color" id="workspacePL" style="display: none; height: 100%; width: 100%;"></div>
+    @*<iframe id="mainFrame" style="Height: 90%; margin-top: 30px; position: relative; width: 100%" src="about:blank"></iframe>*@
+    <div id="DocumentPartial" style="height: 75%; margin-top: 32px;"></div>
+</div>
+<div data-role="charm" data-position="right" id="NotesCharm" style="min-width: 100%; z-index: 30000;" data-outside="false" class="bg-grayDark">
+    <div data-role="preloader" data-type="cycle" data-style="color" id="NotesPartialPL" style="display: none; height: 100%; width: 100%;"></div>
+    <div id="NotesPartial" style="height: 100%; margin-top: 30px;"></div>
+</div>
+<div data-role="charm" data-position="right" id="PropertiesCharm" style="min-width: 100%; z-index: 30000;" data-outside="false" class="bg-grayDark">
+    <div data-role="preloader" data-type="cycle" data-style="color" id="PropertiesPartialPL" style="display: none; height: 100%; width: 100%;"></div>
+    <div id="PropertiesPartial" style="height: 100%; margin-top: 30px;"></div>
+</div>
+<div data-role="charm" data-position="right" id="CompleteTaskCharm" style="min-width: 100%; z-index: 30001;" data-outside="false" class="bg-grayDark">
+    <div data-role="preloader" data-type="cycle" data-style="color" id="CompleteProcessDialogPartialPL" style="display: none; height: 100%; width: 100%;"></div>
+    <div id="CompleteProcessDialogPartial" style="height: 100%; margin-top: 30px;"></div>
+</div>
+<div data-role="charm" data-position="right" id="UserCharm" style="min-width: 100%; z-index: 30000;" data-outside="false" class="bg-grayDark">
+    @if (appUserState != null && Request.IsAuthenticated && appUserState.Connected)
+    {
+        <div style="border-style: none; margin-top: 30px;">
+            <table class="table hovered striped" style="padding-left: 0;">
+                <tr class="bg-grayDark">
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 0;">
+                        <b>User Name:</b>
+                    </td>
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 0;">
+                        @appUserState.Name <br/>
+                        @if (Model.User != null)
+                        {
+                            <img src="@Model.User.UserImgPath" style="height: 45px; margin-bottom: 6px; padding-top: 5px;" onclick="UserClick(event)">
+                        }
+
+                    </td>
+                </tr>
+                <tr class="bg-grayDark">
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 0;">
+                        <b>Signed in using:</b>
+                    </td>
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 0;">
+                        @appUserState.SignInFrom
+                    </td>
+                </tr>
+                <tr class="bg-grayDark">
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 0;">
+                        <b>Workgroup:</b>
+                    </td>
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 0;">@appUserState.Wgs</td>
+                </tr>
+                <tr class="bg-grayDark">
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 0;">
+                        <b>Dataset ID:</b>
+                    </td>
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 0;">@appUserState.Ds</td>
+                </tr>
+                <tr class="bg-grayDark">
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 5px;">
+                        <b>Auto scroll carousel:</b>
+                    </td>
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 5px;">
+                        <label class="switch">
+                            <input type="checkbox" id="chkAutoScrollCaro">
+                            <span class="check"></span>
+                        </label>
+                    </td>
+                </tr>
+
+                <tr class="bg-grayDark">
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 5px;">
+                        <b>Align Tiles:</b>
+                    </td>
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 5px;">
+                        <div class="tile-small bg-white" data-role="tile" style="height: 50px; margin-left: 0; width: 50px;">
+                            <div class="tile-content iconic">
+                                <span class="icon mif-lines fg-crimson" onclick="AlignTiles()" ontouchstart="AlignTiles()"></span>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="bg-grayDark">
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 5px;">
+                        <b>Theme:</b>
+                    </td>
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 5px;">
+                        <div class="input-control select">
+                            <select onchange="ChangeTheme(this.value)" id="lstTheme">
+                                <option value="Dark">Dark</option>
+                                <option value="Light">Light</option>
+                                <option value="Blue">Blue</option>
+                                <option value="Red">Red</option>
+                                <option value="Green">Green</option>
+                            </select>
+                        </div>
+                    </td>
+                </tr>
+                <tr class="bg-grayDark">
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 5px;">
+                        <b>Log Off:</b>
+                    </td>
+                    <td style="padding-bottom: 0; padding-left: 0; padding-top: 5px;">
+                        <button class="shortcut-button bg-white fg-crimson bg-active-darkBlue" onclick="location.href = '@Url.Action("LogOff", "Auth")'">
+                            <span class="icon mif-exit"></span>
+                            <span class="title">Log Off</span>
+                        </button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    }
+    else
+    {
+        @Html.ActionLink("Sign in", "LogOn", "Auth", null, new {@class = "k-button"})
+    }
+</div>
+<div data-role="charm" data-position="right" id="ReportConfigCharm" style="height: 100%; width: 100%; z-index: 30000;"   data-outside="false" class="bg-grayDark charm">
+<div class="tabcontrol" data-role="tabcontrol" style="height: 86%" id="ExportManagerTabControl">
+<ul class="tabs">
+    <li>
+        <a href="#EMSchedule">Schedule</a>
+    </li>
+    <li>
+        <a href="#Export">Export</a>
+    </li>
+    <li>
+        <a href="#Fields">Fields</a>
+    </li>
+    <li>
+        <a href="#Preview">Preview</a>
+    </li>
+    <li>
+        <a href="#History">History</a>
+    </li>
+</ul>
+<div class="frames bg-grayDark fg-white" style="height: 100%">
+<div class="frame bg-grayDark fg-white " id="EMSchedule" style="height: 88%">
+    <div data-role="preloader" data-type="cycle" data-style="color" id="SchedulePartialViewPL" style="display: none; height: 100%; width: 100%;"></div>
+    <div id="SchedulePartialView"></div>
+</div>
+<div class="frame bg-grayDark fg-white" id="Export" style="display: none; height: 88%;" data-role="validator" data-show-required-state="false" data-hint-mode="line" data-hint-background="bg-red" data-hint-color="fg-white" data-hide-error="0">
+    <div class="example bg-grayDark fg-white swipe" data-text="Export Config">
+        <div class="panel" data-role="panel">
+            <div class="heading">
+                <span class="title">Export</span>
+            </div>
+            <div class="content">
+                <span class="caption">Name</span>
+                <div class="cell size10">
+                    <div class="input-control text" style="width: 30%">
+                        <input type="text" placeholder="Name" id="txtName" class="k-textbox">
+                    </div>
+                </div>
+                <span class="caption">Saved Searches</span>
+                <div class="cell ">
+                    @*<div class="input-control select">
+                                    <select id="SavedSearches">
+                                        @if (Model.SavedSearches.Any())
+                                        {
+                                            foreach (var app in Model.SavedSearches)
+                                            {
+                                                <option value="@app">@app</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>*@
+                    <select id="SavedSearches">
+
+                        @if (Model.SavedSearches.Any())
+                        {
+                            foreach (var app in Model.SavedSearches)
+                            {
+                                <option value="@app">@app</option>
+                            }
+                        }
+
+                    </select>
+                </div>
+                <span class="caption">Run Export as User</span>
+                <div data-role="preloader" data-type="cycle" data-style="color" id="LocationsPartialPL" style="display: none; height: 100%; width: 100%;"></div>
+                <div id="runaspartial"></div>
+                
+            </div>
+        </div>
+        <div class="panel collapsed" data-role="panel">
+            <div class="heading">
+                <span class="title">File</span>
+            </div>
+            <div class="content">
+                <span class="caption">Export File Location</span>
+                <div class="input-control text" style="width: 100%">
+                    <input type="text" placeholder="File Location" id="txtExportLocation" class="k-textbox">
+                </div>
+                <span class="caption">File Name</span>
+                <div class="input-control text" style="width: 100%">
+                    <input type="text" placeholder="File Name" id="txtFileName" class="k-textbox">
+                </div>
+                <span class="caption">Archive Export File Location</span>
+                <div class="input-control text" style="width: 100%">
+                    <input type="text" placeholder="Archive File Location" id="txtArchiveExportLocation" class="k-textbox">
+                </div>
+                <div class="flex-grid " style="height: 100%; overflow: auto">
+                    <div class="row">
+                        <div class="cell size2">
+                            Delimiter
+                        </div>
+                        <div class="cell size4">
+                            Text Qualifier
+                        </div>
+                    </div>
+                    <div class="row" style="padding-left: 5px; padding-top: 5px;">
+                        <div class="cell size2">
+                            <div class="input-control text" style="width: 30%">
+                                <input type="text" placeholder="Delimiter" id="txtDelimeter" class="k-textbox">
+                            </div>
+                        </div>
+                        <div class="cell size4">
+                            <div class="input-control text" style="width: 30%">
+                                <input type="text" placeholder="Text Qualifier" id="txtQualifier" class="k-textbox">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="cell size2">
+                            Append
+                        </div>
+                        <div class="cell size2">
+                            Archive
+                        </div>
+                        <div class="cell size2">
+                            Include Headers
+                        </div>
+                    </div>
+                    <div class="row" style="padding-bottom: 5px; padding-left: 5px; padding-top: 5px;">
+                        <div class="cell size2">
+                            <label class="switch">
+                                <input type="checkbox" id="chkAppend">
+                                <span class="check"></span>
+                            </label>
+                        </div>
+                        <div class="cell size2">
+                            <label class="switch">
+                                <input type="checkbox" id="chkArchive">
+                                <span class="check"></span>
+                            </label>
+                        </div>
+                        <div class="cell size2">
+                            <label class="switch">
+                                <input type="checkbox" id="chkIncludeHeaders">
+                                <span class="check"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="panel collapsed" data-role="panel">
+            <div class="heading">
+                <span class="title">Email</span>
+            </div>
+            <div class="content">
+                <span class="caption">Failure Alert</span>
+                <div class="input-control text " data-role="input" style="width: 100%">
+                    <input type="text" data-validate-func="email" placeholder="Email addresses (Comma Separated) to be alerted on failure" data-validate-hint="Invalid Email Address" id="txtFailureEmailAddresses" class="k-textbox">
+                    <span class="input-state-error mif-warning" style="right: 8px;"></span>
+                    <span class="input-state-success mif-checkmark" style="right: 8px;"></span>
+                </div>
+                <span class="caption">Success Alert</span>
+                <div class="input-control text " data-role="input" style="width: 100%">
+                    <input type="text" data-validate-func="email" placeholder="Email addresses (Comma Separated) to be alerted on success" data-validate-hint="Invalid Email Address" id="txtSuccessEmailAddresses" class="k-textbox">
+                    <span class="input-state-error mif-warning" style="right: 8px;"></span>
+                    <span class="input-state-success mif-checkmark" style="right: 8px;"></span>
+                </div>
+                <span class="caption">Include Export In Email</span>
+                <label class="switch" style="padding-left: 5px; padding-top: 5px; width: 100%;">
+                    <input type="checkbox" id="chkIncludeExport">
+                    <span class="check"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="frame bg-grayDark fg-white " id="Fields" style="display: none; height: 88%;">
+    <div data-role="preloader" data-type="cycle" data-style="color" id="FieldsPL" style="display: none; height: 100%; width: 100%;"></div>
+    <div class="example   bg-grayDark fg-white" style="height: 95%" data-text="Data">
+        <div class="flex-grid  " style="height: 100%">
+            <div class="row" style="height: 100%">
+                <div class="cell size3" style="height: 100%;">
+                    <div class="input-control text">
+                        <input type="text" placeholder="filter properties..." onkeyup="filterProperties(this)" class="k-textbox" id="propertiesFilter">
+                    </div>
+                    <button class="button cycle-button" onclick="clearfilterProperties()" style="float: right; height: 25px; margin-top: 5px; min-width: 0px; position: absolute; width: 25px;">
+                        <span class="mif-not"></span>
+                    </button>
+                    <div class="bg-grayDark fg-white" style="height: 93%; overflow: auto">
+                        <div data-role="preloader" data-type="cycle" data-style="color" id="PropertiesTreelPL" style="display: none; height: 100%; width: 100%;"></div>
+                        @*<div id="RecordTypePropertiesPartial"></div>*@
+                        <div class="k-content">
+                            @(Html.Kendo().TreeView()
+                                  .Name("treeview")
+                                  .DataTextField("Caption")
+                                  .DataSource(dataSource => dataSource
+                                      .Model(model => model
+                                          .Id("HyperlinkText")
+                                         .HasChildren("HasChildren")
+                                      )
+                                      .Read(read => read
+                                          .Action("GetInforPropsTreeView", "Reports")
+                                          .Data("GetSelectedProperty")
+                                      )
+                                  )
+                                  .DragAndDrop(true)
+                                  .Events(events => events
+                                      .Drop("onDrop")
+                                  )
+                                  )
+                        </div>
+                    </div>
+                </div>
+                <div class="cell size1 " id="RemovePropertyDropArea">
+                    <div class="ribbed-grayLight fg-white padding10 text-shadow" style="height: 100%; margin-top: 9px; width: 100%;">
+                        Drop here to remove
+                        <div class="cell size2">
+                            <div style="text-align: center">
+                                <button class="button cycle-button" onclick="AddField()">
+                                    <span class="mif-chevron-right"></span>
+                                </button>
+                            </div>
+                            <div style="text-align: center">
+                                <button class="button cycle-button" onclick="RemoveField()">
+                                    <span class="mif-chevron-left"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="cell size8">
+                    <div id="somethingelse" style="min-height: 100%; overflow: auto">
+                        <span style="padding-left: 5px;">Drop properties below</span>
+                        <div class="listview list-type-tiles" id="addedProps" style="height: 100%; margin-top: 10px;" data-role="listview">
+                        </div>
+                        @*<select id="listBox"></select>*@
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="frame bg-grayDark fg-white" id="Preview" style="display: none; height: 88%;">
+    <div class="example    bg-grayDark fg-white" data-text="Preview" style="height: 80%; overflow: auto" id="PreviewSection">
+        <div data-role="preloader" data-type="cycle" data-style="color" id="PreviewSectionPL" style="display: none; height: 100%; width: 100%;"></div>
+        <div id="PreviewText" style="height: 80%; overflow: auto;"></div>
+    </div>
+</div>
+<div class="frame bg-grayDark fg-white " id="History" style="display: none; height: 88%;">
+    <div id="HistoryPartialView" style="height: 100%; overflow: auto"></div>
+</div>
+</div>
+</div>
+<div class="swipe">
+    <button class="shortcut-button bg-cyan fg-white bg-active-darkBlue" id="SaveReport">
+        <span class="icon mif-floppy-disk"></span>
+        <span class="title">Save</span>
+    </button>
+    <button class="shortcut-button bg-cyan fg-white bg-active-darkBlue" id="PreviewReport">
+        <span class="icon mif-eye"></span>
+        <span class="title">Preview</span>
+    </button>
+</div>
+</div>
+
+<div class="tile-container bg-grayDarker" style="height: 100%; padding-top: 50px; width: 100%;">
+    <div id="bc"></div>
+    <div data-role="preloader" data-type="cycle" data-style="color" id="MainPartialContainerPL" style="display: none; height: 100%; position: relative; width: 100%;"></div>
+    <div id="PinnedTilesPartial" style="height: 95%; width: 100%;" contextmenu="ContextMenu"></div>
+    <div class="tile-container" id="MainPartialContainer" style="display: none; height: 100%;">
+    </div>
+</div>
+<div data-role="dialog" id="ContextMenu" class="padding20 dialog" data-hide="2000" data-close-button="true" style="height: auto; left: 313px; top: 370px; visibility: hidden; width: auto;">
+    <p>
+        <table class="table" style="padding-left: 0;">
+            <tr >
+                <td style="padding-bottom: 0; padding-left: 0; padding-top: 5px;">
+                    <b>Align Tiles:</b>
+                </td>
+                <td style="padding-bottom: 0; padding-left: 0; padding-top: 5px;">
+                    <div class="tile-small bg-white" data-role="tile" style="height: 50px; margin-left: 0; width: 50px;">
+                        <div class="tile-content iconic">
+                            <span class="icon mif-lines fg-crimson" onclick="AlignTiles()" ontouchstart="AlignTiles()"></span>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </p>
+    <span class="dialog-close-button"></span>
+</div>
+<script type="text/javascript">
+
+
+    function GetSelectedProperty(data) {
+        if (data.HyperlinkText !== undefined) {
+            const elem = $(".k-state-focused").closest(".k-treeview");
+            const tree = $(elem).data("kendoTreeView");
+            const parentProp = JSON.stringify(tree.dataSource.get(data.HyperlinkText));
+            return { parentString: parentProp};
+            //Id: tree.dataSource.get(data.Id).Id,
+            //Caption: tree.dataSource.get(data.Id).Caption,
+            //Uri: tree.dataSource.get(data.Id).Uri,
+            //Path: tree.dataSource.get(data.Id).Path,
+            //Parent: tree.dataSource.get(data.Id).Parent
+        
+        }
+        return null;
+    }
+    function searchKeyPress(e) {
+        // look for window.event in case event isn't passed in
+        e = e || window.event;
+        if (e.keyCode === 13) {
+            quickSearch($('#quickSearch').val());
+            return false;
+        }
+        return true;
+    }
+
+    function quickSearch(term) {
+        refresh = false;
+        $("#MainPartialContainerPL").show();
+        var pinlayout = document.getElementById('PinnedTilesPartial');
+        var mainlayout = document.getElementById('MainPartialContainer');
+        mainlayout.style.display = 'block';
+
+        pinlayout.style.display = 'none';
+
+        $.ajax({
+            url: '@Url.Action("QuickSearch", "Records")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { searchTerm: term },
+            success: function(result) {
+                $("#MainPartialContainerPL").hide();
+                $("#MainPartialContainer").html(result);
+                ResetBreadCrumbDivQuickSearch(term);
+                $("#bc").html(bc);
+            }
+        });
+
+
+    }
+
+    function insertTest() {
+        var dataMessage = {
+            frameEditorId: "iframeEditor",
+            guid: "asc.{A8705DEE-7544-4C33-B3D5-168406D92F72}",
+            type: "onExternalPluginMessage",
+            data: {
+                type: "close",
+                text: "text"
+            }
+        };
+        dataMessage.data.type = "insertText";
+        dataMessage.data.text = "this is a test";
+        var _iframe = document.getElementsByName("frameEditor")[0];
+        if (_iframe)
+            _iframe.contentWindow.postMessage(JSON.stringify(dataMessage), "*");
+    }
+
+    //function notesStoppedTyping(value) {
+    //    if (!value.length) {
+    //        document.getElementById('btnSaveNotesProcess').disabled = true;
+    //        document.getElementById('btnSaveNotesRecords').disabled = true;
+    //    } else {
+    //        document.getElementById('btnSaveNotesProcess').disabled = false;
+    //        document.getElementById('btnSaveNotesRecords').disabled = false;
+    //    }
+    //}
+    //function actionsStoppedTyping(value) {
+    //    if (!value.length) {
+    //        document.getElementById('completeActionButton').disabled = true;
+    //    } else {
+    //        document.getElementById('completeActionButton').disabled = false;
+    //    }
+    //}
+    $("#PinnedTilesPartial").contextmenu(function(e) {
+        metroDialog.open('#ContextMenu'); //here you draw your own menu
+        e.preventDefault();
+    });
+
+    function AlignTiles() {
+        var tiles = [];
+        $(".tile", "#Tiles")
+            .each(function(index, item) {
+                var tile = item.dataset.tile;
+                var t = jQuery.parseJSON(tile);
+                $(item).css({ top: 0, left: 0, display: 'block', position: 'relative' });
+                //$(item).remove();
+                //$("#Tiles").append($(item));
+                t.Left = 0;
+                t.Top = 0;
+                tiles.push(t);
+            });
+        $.ajax({
+            type: 'post',
+            cache: false,
+            async: true,
+            data: { incommingTiles: JSON.stringify(tiles) },
+            url: '@Url.Action("SaveTiles", "HomeM")'
+        });
+    }
+
+    var viewDocs = [];
+    var editDocs = [];
+    var Darktheme = { lighter: 'bg-grayLighter', light: 'bg-grayDark', dark: 'bg-grayDarker', darker: 'bg-black' };
+    var Lighttheme = { lighter: 'bg-grayLighter', light: 'bg-grayLight', dark: 'bg-gray', darker: 'bg-darker' };
+    var Bluetheme = { lighter: 'bg-lighterBlue', light: 'bg-lightBlue', dark: 'bg-blue', darker: 'bg-darkBlue' };
+    var Redtheme = { lighter: 'bg-lightRed', light: 'bg-red', dark: 'bg-darkRed', darker: 'bg-crimson' };
+    var Greentheme = { lighter: 'bg-lightGreen', light: 'bg-green', dark: 'bg-darkGreen', darker: 'bg-darkEmerald' };
+    var ct = Darktheme;
+
+    function ChangeTheme(newThemestring) {
+        var newTheme;
+        //New Theme
+        if (newThemestring === 'Dark') {
+            newTheme = Darktheme;
+        }
+        if (newThemestring === 'Light') {
+            newTheme = Lighttheme;
+        }
+        if (newThemestring === 'Blue') {
+            newTheme = Bluetheme;
+        }
+        if (newThemestring === 'Red') {
+            newTheme = Redtheme;
+        }
+        if (newThemestring === 'Green') {
+            newTheme = Greentheme;
+        }
+        $('.' + ct.lighter).addClass(newTheme.lighter);
+        $('.' + ct.lighter).removeClass(ct.lighter);
+        $('.' + ct.light).addClass(newTheme.light);
+        $('.' + ct.light).removeClass(ct.light);
+        $('.' + ct.dark).addClass(newTheme.dark);
+        $('.' + ct.dark).removeClass(ct.dark);
+        $('.' + ct.darker).addClass(newTheme.darker);
+        $('.' + ct.darker).removeClass(ct.darker);
+        ct = newTheme;
+        $.ajax({
+            type: 'post',
+            cache: false,
+            async: true,
+            data: { theme: newThemestring },
+            url: '@Url.Action("SaveUserTheme", "HomeM")'
+        });
+    }
+
+    //these might seem redundant but the before unload is needed for chrome, because we can't use unload,
+    //we use an array in the clean up method, and at the end of that array we clear the array, so the redundant call
+    //will work off an empty array.
+    $(window)
+        .on('beforeunload',
+            function() {
+                HideCharm(false);
+            });
+    $(window)
+        .on("unload",
+            function() {
+                HideCharm();
+            });
+
+    function HideCharm(async) {
+        $("#workspacePL").show();
+
+        if (editDocs.length) {
+            var docmodel = $("#DocumentModelContainer").attr("data-model");
+            if (docmodel !== undefined) {var m = jQuery.parseJSON(docmodel);
+
+                $.ajax({
+                    url: '@Url.Action("DocServerCommand", "Document")',
+                    type: 'post',
+                    cache: false,
+                    async: true,
+                    data: {
+                        "cc": "forcesave",
+                        "keyc": m.FileModel.Key,
+                        "userdatac": ""
+                    }
+
+                });
+                RefreshTile(m.Uri);
+            }}
+
+
+
+        viewDocs.forEach(function(element) {
+            $.ajax({
+                url: '@Url.Action("ViewDocumentWebSessionEnd", "Document")',
+                type: 'POST',
+                cache: false,
+                async: false,
+                data: { uri: element },
+                success: function(result) {
+                }
+            });
+        });
+        viewDocs = [];
+        $("#workspacePL").hide();
+        window.refresh = true;
+
+
+        return true;
+    }
+
+    function HideProcessAction(async) {
+        console.log('here');
+        var model = $("#ProcessChart").attr("data-model");
+        var m = jQuery.parseJSON(model);
+        ProcessClick(event, m.Uri);
+        return true;
+    }
+
+    function stringToBoolean(s) {
+        switch (s.toLowerCase().trim()) {
+        case "true":
+        case "yes":
+        case "1":
+            return true;
+        case "false":
+        case "no":
+        case "0":
+        case null:
+            return false;
+        default:
+            return Boolean(string);
+        }
+    }
+
+    function pinUserTile(event, title) {
+        event.stopPropagation();
+        var currentTiles = getCookie('usertiles');
+        currentTiles = currentTiles + '|' + title;
+        document.cookie = "usertiles=" + currentTiles + "; expires=Fri, 31 Dec 9999 23:59:59 GMT";
+        var allTiles = @Html.Raw(Json.Encode(Model.AppTiles));
+        var tile;
+        allTiles.forEach(function(t) {
+            t.AppTiles.forEach(function(tt) {
+                var apptitle = "";
+                var quickapptitle = "";
+                if (tt.Search.App === "Reporting") {
+                    quickapptitle =
+                        "<span class='tile-label' style='font-size: 10px; padding:0; color: black; margin-top: 50px; line-height: 10px;'>" +
+                        title +
+                        "</span>";
+                    apptitle = "<span class='tile-label' '>" + title + "</span>";
+                }
+                if (tt.Title === title) {
+                    var ser = JSON.stringify(tt.Search);
+                    var tilestr = " <div class='tile' style='display: block;'  data-tile='" +
+                        JSON.stringify(tt) +
+                        "' onclick='TileClicked(event, " +
+                        quoteAndEscape(tt.Title) +
+                        ", " +
+                        JSON.stringify(ser) +
+                        ", " +
+                        quoteAndEscape(t.Title) +
+                        ")' id='" +
+                        tt.Title.replace(/ /g, "_") +
+                        "' data-title=" +
+                        tt.Title +
+                        "   data-css=" +
+                        tt.Search.Css +
+                        " data-background=" +
+                        tt.Search.Background +
+                        ">" +
+                        "<div class='" +
+                        tt.Search.TileCss +
+                        "' >" +
+                        "   <span class='" +
+                        tt.Search.Css +
+                        "' ></span>" +
+                        apptitle +
+                        "<span class='mif-not fg-dark' onclick='removePinUserTile(event, " +
+                        quoteAndEscape(tt.Title) +
+                        ");'></span>" +
+                        " </div>" +
+                        " </div>";
+                    var quicktilestr = " <div class='tile-small'  onclick='TileClicked(event, " +
+                        quoteAndEscape(tt.Title) +
+                        ", " +
+                        JSON.stringify(ser) +
+                        ", " +
+                        quoteAndEscape(t.Title) +
+                        ")' id='quicktile" +
+                        tt.Title.replace(/ /g, "_") +
+                        "' data-title=" +
+                        tt.Title +
+                        "   data-css=" +
+                        tt.Search.Css +
+                        " data-background=" +
+                        tt.Search.Background +
+                        ">" +
+                        "<div class='" +
+                        tt.Search.TileCss +
+                        "' >" +
+                        "   <span class='" +
+                        tt.Search.Css +
+                        "'  ></span>" +
+                        apptitle +
+                        "<span class='mif-not fg-dark' onclick='removePinUserTile(event, " +
+                        quoteAndEscape(tt.Title) +
+                        ");' style='margin-bottom: 38px;margin-left: 2px; font-size: 8px; font-weight:bold'></span>" +
+                        " </div>" +
+                        " </div>";
+                    var tiles = document.getElementById("Tiles");
+                    if (tiles != undefined) {
+                        tiles.innerHTML = tiles.innerHTML + tilestr;
+                    }
+                    var quickTiles = document.getElementById("quickTiles");
+                    quickTiles.innerHTML = quickTiles.innerHTML + quicktilestr;
+                    var pin = document.getElementById('pinSpan_' + title.replace(/ /g, "_"));
+                    pin.style.display = 'none';
+                    tile = tt;
+                }
+            });
+        });
+        $.ajax({
+            type: 'post',
+            cache: false,
+            async: true,
+            data: { incommingTile: JSON.stringify(tile) },
+            url: '@Url.Action("PinUserTile", "HomeM")'
+        });
+    }
+
+    function removePinUserTile(event, title) {
+        event.stopPropagation();
+        var currentTiles = getCookie('usertiles');
+        currentTiles = currentTiles.replace(title, "");
+        document.cookie = "usertiles=" + currentTiles + "; expires=Fri, 31 Dec 9999 23:59:59 GMT";
+        var pin = document.getElementById('pinSpan_' + title.replace(/ /g, "_"));
+        if (pin !== null && pin !== undefined)
+            pin.style.display = 'inline';
+        var elem = document.getElementById('quicktile' + title.replace(/ /g, "_"));
+        $(elem).remove();
+        var elem1 = document.getElementById(title.replace(/ /g, "_"));
+        var tile = $(elem1)["0"].dataset.tile;
+        var t = jQuery.parseJSON(tile);
+        $(elem1).remove();
+        @*var allTiles = @Html.Raw(Json.Encode(Model.AppTiles));
+        var tile;
+        allTiles.forEach(function(t) {
+            t.AppTiles.forEach(function(tt) {
+                if (tt.Title === title) {
+                    tile = tt;
+                }
+            });
+        });*@
+        $.ajax({
+            type: 'post',
+            cache: false,
+            async: true,
+            data: { incommingTile: JSON.stringify(t) },
+            url: '@Url.Action("RemovePinUserTile", "HomeM")'
+        });
+    }
+
+    function droptargetOnDrop(e) {
+        var elm = e.draggable.currentTarget;
+        var tile = elm["0"].dataset.tile;
+        var t = jQuery.parseJSON(tile);
+        t.Left = e.draggable.hint.offset().left;
+        t.Top = e.draggable.hint.offset().top;
+        $(elm["0"]).css({ top: t.Top, left: t.Left, position: 'absolute' });
+        $.ajax({
+            type: 'post',
+            cache: false,
+            async: true,
+            data: { incommingTile: JSON.stringify(t) },
+            url: '@Url.Action("SaveTile", "HomeM")'
+        });
+    }
+
+    $("#PinnedTilesPartial")
+        .kendoDropTarget({
+            group: "DragTile",
+            drop: droptargetOnDrop
+        });
+
+    function initDraggable() {
+        $("#PinnedTilesPartial")
+            .kendoDraggable({
+                group: "DragTile",
+                filter: ".tile",
+                hint: function(element) { //create a UI hint, the `element` argument is the dragged item
+                    return element.clone()
+                        .css({
+                            "opacity": 0.6,
+                            "background-color": "#0cf"
+                        });
+                }
+            });
+    }
+
+
+    var model = @Html.Raw(Json.Encode(Model));
+    $(document)
+        .ready(function () {
+            var errormodel = $("#ErrorModelContainer").attr("data-model");
+            var errorm = jQuery.parseJSON(errormodel);
+            if (errorm.HasMessage) {
+                $.Notify({ keepOpen: true, type: 'alert', caption: 'Error', content: errorm.Message, timeout: 5000 });
+            }
+            var connected = @Json.Encode(appUserState.Connected);
+
+
+            if (connected) {
+
+                $("#MainPartialContainerPL").show();
+                if (model.Theme != undefined && model.Theme !== 'Dark') {
+                    ChangeTheme(model.Theme);
+                    $("#lstTheme").val(model.Theme);
+                }
+                window.verticalView = false;
+                window.autoScrollCaro = model.AutoScrollCaro;
+                $('#chkAutoScrollCaro').prop('checked', window.autoScrollCaro);
+                $('#chkAutoScrollCaro')
+                    .click(function() {
+                        window.autoScrollCaro = $(this).prop("checked");
+                        if ($(this).prop("checked") === true) {
+                            $("[data-role=carousel]")
+                                .each(function(index, item) {
+                                    //$(item).attr("data-auto", true);
+                                    $(item).data('carousel').setAuto(true);
+                                });
+                        } else if ($(this).prop("checked") === false) {
+                            $("[data-role=carousel]")
+                                .each(function(index, item) {
+                                    //$(item).attr("data-auto",  false);
+                                    $(item).data('carousel').setAuto(false);
+                                });
+                        }
+                        $.ajax({
+                            type: 'post',
+                            cache: false,
+                            async: true,
+                            data: {
+                                autoScroll: $(this).prop("checked")
+                            },
+                            url: '@Url.Action("SaveUserToggle", "HomeM")'
+                        });
+                    });
+
+                $($('[data-role="charm"]').not("#ProcessCharm, #workspace, #ReportConfigCharm, #ActionsCharm"))
+                    .kendoTouch({
+                        enableSwipe: true,
+                        swipe: function(e) {
+                            if (e.direction === 'right') {
+                                var charm = document.getElementById(e.sender.events.currentTarget.id);
+                                hideMetroCharm(charm);
+                            }
+                        }
+                    });
+
+                $.ajax({
+                    url: '@Url.Action("PinnedTiles", "HomeM")',
+                    type: 'post',
+                    cache: false,
+                    async: true,
+                    success: function(result) {
+                        $("#MainPartialContainerPL").hide();
+                        var partial = document.getElementById("PinnedTilesPartial");
+                        partial.innerHTML = result;
+                        initDraggable();
+                        $(".tile", "#Tiles")
+                            .each(function(index, item) {
+                                var tile = item.dataset.tile;
+                                var t = jQuery.parseJSON(tile);
+                                var pin = document.getElementById('pinSpan_' + t.Title.replace(/ /g, "_"));
+                                if (pin !== null) {
+                                    pin.style.display = 'none';
+                                }
+                            });
+                    },
+                    error: function() {
+                        $("#MainPartialContainerPL").hide();
+                    }
+                });
+                $.ajax({
+                    url: '@Url.Action("PinnedQuickTiles", "HomeM")',
+                    type: 'post',
+                    cache: false,
+                    async: true,
+                    success: function(result) {
+                        var partial = document.getElementById("QuickTilesPartial");
+                        partial.innerHTML = result;
+                    },
+                    error: function() {}
+                });
+
+                $.ajax({
+                    url: '@Url.Action("CacheLocations", "HomeM")',
+                    type: 'post',
+                    cache: false,
+                    async: true
+                });
+            }
+        });
+    var selectedTile = null;
+    var bc = "";
+    var bcids = [];
+
+    function FileUpload(e) {
+        $("#fileuploadCharmPL").show();
+        var refreshPathAndQuery = "?id=" + e;
+        var refreshUrl = crudServiceBaseUrl + '/Home/RefreshRecord' + refreshPathAndQuery;
+        var formData = new FormData();
+        var selectedFile = document.getElementById('documentUpload').files[0];
+        formData.append("FileUpload", selectedFile);
+        var pathAndQuery = "?uri=" + e;
+        var url = crudServiceBaseUrl + '/Home/Upload' + pathAndQuery;
+        $.ajax({
+            type: "POST",
+            url: url,
+            data: formData,
+            dataType: 'json',
+            contentType: false,
+            processData: false,
+            success: function(response) {
+                $.ajax({
+                    type: "GET",
+                    url: refreshUrl,
+                    dataType: 'JSONP',
+                    success: function(data) {
+                        RefreshTile(e);
+                        var charm = document.getElementById("fileuploadCharm");
+                        hideMetroCharm(charm);
+                        $("#fileuploadCharmPL").hide();
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log("Error:" + errorThrown);
+                    }
+                });
+            },
+            error: function(error) {
+                $.ajax({
+                    type: "GET",
+                    url: refreshUrl,
+                    dataType: 'JSONP',
+                    success: function(data, textStatus, jqXHR) {
+                        RefreshTile(e);
+                        var charm = document.getElementById("fileuploadCharm");
+                        hideMetroCharm(charm);
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.log("Error:" + errorThrown);
+                    }
+                });
+            }
+        });
+    }
+
+    function CheckinClick(e) {
+        $("#workspacePL").show();
+        var docmodel = $("#DocumentModelContainer").attr("data-model");
+        var m = jQuery.parseJSON(docmodel);
+
+        @*$.ajax({
+            url: '@Url.Action("DropUser", "Document")',
+            type: 'post',
+            cache: false,
+            async: false,
+            data: {
+                 "keyc": m.FileModel.Key,
+                "userdatac": "checkin||" + e + "||" + m.FileModel.UserName + "||" + m.FileModel.Wgs + "||" + m.FileModel.Ds
+            },*@
+        $.ajax({
+            url: '@Url.Action("DocServerCommand", "Document")',
+            type: 'post',
+            cache: false,
+            async: true,
+            data: {
+                "cc": "forcesave",
+                "keyc": m.FileModel.Key,
+                "userdatac": "checkin||" + e + "||" + m.FileModel.UserName + "||" + m.FileModel.Wgs + "||" + m.FileModel.Ds
+            },
+            success: function (data) {
+                var charm = document.getElementById("workspace");
+                hideMetroCharm(charm);
+                RefreshTile(e);
+            }
+
+        });
+
+
+        @*var refreshPathAndQuery = "?id=" + e;
+        var refreshUrl = crudServiceBaseUrl + '/Home/RefreshRecord' + refreshPathAndQuery;
+        var rec;
+        $.ajax({
+            type: "GET",
+            url: refreshUrl,
+            async: false,
+            dataType: 'JSONP',
+            success: function(data) {
+                setTimeout(function() {
+                        rec = data;
+                        if (rec.CheckoutPath.includes("Web Download via inReach")) {
+                            //var fileuploadButton = document.getElementById('UploadFileButton');
+                            //fileuploadButton.onclick = function() { FileUpload(e); };
+                            $('#UploadFileButton').on('click touchstart', function() { FileUpload(e); });
+                            var charm = document.getElementById("fileuploadCharm");
+                            showMetroCharm(charm);
+                            return;
+                        }
+                        $.ajax({
+                            url: '@Url.Action("CheckinDocument", "Document")',
+                            type: 'POST',
+                            cache: false,
+                            async: true,
+                            data: { uri: e },
+                            success: function(result) {
+                                $.ajax({
+                                    type: "GET",
+                                    url: refreshUrl,
+                                    dataType: 'JSONP',
+                                    success: function(data) {
+                                        $("#workspacePL").hide();
+                                        var charm = document.getElementById("workspace");
+                                        hideMetroCharm(charm);
+                                        RefreshTile(e);
+                                    },
+                                    error: function(jqXhr, textStatus, errorThrown) {
+                                        console.log("Error:" + errorThrown);
+                                    }
+                                });
+                            }
+                        });
+                    },
+                    5000);
+            }
+        });*@
+    }
+
+    function HomeClicked() {
+        location.reload();
+    }
+
+    var onDocumentStateChange = function(event) {
+        if (!event.data) {
+            var docmodel = $("#DocumentModelContainer").attr("data-model");
+            var m = jQuery.parseJSON(docmodel);
+
+            $.ajax({
+                url: '@Url.Action("DocServerCommand", "Document")',
+                type: 'post',
+                cache: false,
+                async: true,
+                data: {
+                    "cc": "forcesave",
+                    "keyc": m.FileModel.Key,
+                    "userdatac": ""
+                }
+
+            });
+        }
+    };
+
+    function SaveDocument(event) {
+    }
+
+    function InitialiseDocument(m) {
+
+        var mode = "view";
+        if (m.Edit) mode = "edit";
+        var fileName = m.FileModel.FileName;
+        var fileType = fileName.split('.').pop();
+        var config = {
+            //"events": {
+            //    "onDocumentStateChange": onDocumentStateChange
+            //},
+            "document": {
+                "fileType": fileType,
+                "key": m.FileModel.Key,
+                "title": fileName,
+                "url": m.FileModel.FileUri,
+                info: {
+                    author: '@appUserState.Name',
+                    created: '@DateTime.Now.ToShortDateString()'
+                },
+                "permissions": {
+                    "comment": false,
+                    "download": false,
+                    "edit": m.Edit,
+                    "print": true,
+                    "review": false
+                }
+            },
+            "documentType": m.FileModel.DocumentType,
+            "editorConfig": {
+                "callbackUrl": m.FileModel.CallbackUrl,
+                "mode": mode,
+                "lang": "en-AU",
+                "user": {
+                    "id": '@appUserState.UserId',
+                    "name": '@appUserState.Name'
+                },
+                "customization": {
+                    "chat": false,
+                    "comments": false,
+                    "forcesave": true,
+                    "logo": {
+                        "image": '@SettingsManager.GetSettingValueAsString("crudServiceBaseUrl")' +
+                            "/Content/Images/DocServerHeader.png",
+                        "imageEmbedded": + "/Content/Images/Apps/DocServerHeader.png",
+                        "url": '@SettingsManager.GetSettingValueAsString("crudServiceBaseUrl")' +
+                            "/Content/Images/DocServerHeader.png"
+                    },
+                    "zoom": -2,
+                    "customer": {
+                        "address": "Australia Head Office Level 7, 151 Macquarie St Sydney, NSW 2000 t : 1 300 474 288",
+                        "info": " ",
+                        "logo": "http://informotion.com.au/wp-content/uploads/2015/09/grey-log.png",
+                        "mail": "info@informotion.com.au",
+                        "name": "Informotion",
+                        "www": "http://informotion.com.au/"
+                    }
+                }
+            }
+        };
+        var docEditor = new DocsAPI.DocEditor("placeholder", config);
+
+
+
+        @*if (m.Edit) {
+            $("#WorkSpaceSplitter").kendoSplitter({
+                panes: [{ collapsible: true, size: "20%", scrollable: false }, { collapsible: true }]
+            });
+
+        $.ajax({
+            url: '@Url.Action("InforPropsForRecordForPartial", "Document")',
+            type: 'post',
+            cache: false,
+            async: true,
+            data: { uri: m.Uri, parent: null },
+            success: function(result) {
+                var partial = document.getElementById("RecordPropertiesPartial");
+                partial.innerHTML = result;
+                //initpropertiesdraggable();
+            }
+            });
+        }*@
+    }
+
+    function AddProperty(prop) {
+        var p = jQuery.parseJSON(prop);
+        var text = p["Value"];
+        var dataMessage = {
+            frameEditorId: "iframeEditor",
+            guid: "asc.{A8705DEE-7544-4C33-B3D5-168406D92F72}",
+            type: "onExternalPluginMessage",
+            data: {
+                type: "close",
+                text: "text"
+            }
+        };
+        dataMessage.data.type = "insertText";
+        dataMessage.data.text = text;
+        var iframe = document.getElementsByName("frameEditor")[0];
+        if (iframe)
+            iframe.contentWindow.postMessage(JSON.stringify(dataMessage), "*");
+    }
+
+    function initpropertiesdraggable() {
+        //$("#RecordPropertiesTree").find(".node").each(function (index, item) {
+        //    $(item).find(".leaf").each(function (i, it) {
+        //        $(it).draggable();
+        //        //$(it).kendoDraggable({
+        //        //    group: "DragProperty",
+        //        //    hint: function (element) { //create a UI hint, the `element` argument is the dragged item
+        //        //        return element.clone();
+        //        //    }
+        //        //});
+        //    });
+        //});
+    }
+
+    function nodeClicked(leaf, node, pnode, tree) {
+        if (leaf.length === 0 && node.length === 0) {
+            $(leaf).dblclick();
+            return;
+        }
+        if (node.find("li").length > 0) {
+            $(leaf).dblclick();
+            return;
+        }
+        var prop = node["0"].dataset.prop;
+        if (prop === undefined) {
+            prop = leaf["0"].dataset.prop;
+            if (leaf.find("li").length > 0) {
+                $(leaf).dblclick();
+                return;
+            }
+        }
+        var p = jQuery.parseJSON(prop);
+        if (!p.HasChildren) return;
+        $("#FieldsPL").show();
+        var recordChildrenSuccess = function(data) {
+            $.each(data,
+                function(k, v) {
+                    tree.addLeaf(node, v["Caption"], { prop: JSON.stringify(v) }, v["HasChildren"]);
+                    //initpropertiesdraggable();
+                });
+            $(leaf).dblclick();
+            $("#FieldsPL").hide();
+        };
+        var docmodel = $("#DocumentModelContainer").attr("data-model");
+        var m = jQuery.parseJSON(docmodel);
+        $.ajax({
+            url: '@Url.Action("GetInforPropsForParentForRecord", "Document")',
+            type: 'post',
+            cache: false,
+            async: true,
+            dataType: 'JSONP',
+            data: { uri: m.Uri, parent: p },
+            success: recordChildrenSuccess
+        });
+    }
+    @*function nodeExpanded(leaf, node, pnode, tree) {
+        if (leaf.length === 0 && node.length === 0) {
+            $(leaf).dblclick();
+            return;
+        }
+        if (node.find("li").length > 0) {
+            $(leaf).dblclick();
+            return;
+        }
+        var prop = node["0"].dataset.prop;
+        if (prop === undefined) {
+            prop = leaf["0"].dataset.prop;
+            if (leaf.find("li").length > 0) {
+                $(leaf).dblclick();
+                return;
+            }
+        }
+        var p = jQuery.parseJSON(prop);
+        if (!p.HasChildren) return;
+        $("#FieldsPL").show();
+        var recordChildrenSuccess = function(data) {
+            $.each(data,
+                function(k, v) {
+                    tree.addLeaf(leaf, v["Caption"], { prop: JSON.stringify(v) }, v["HasChildren"]);
+                    //initpropertiesdraggable();
+                });
+
+            $("#FieldsPL").hide();
+        };
+    var model = $("#DocumentModelContainer").attr("data-model");
+        var m = jQuery.parseJSON(model);
+        $.ajax({
+            url: '@Url.Action("GetInforPropsForParentForRecord", "Document")',
+            type: 'post',
+            cache: false,
+            async: true,
+            dataType: 'JSONP',
+            data: { uri: m.Uri, parent: p },
+            success: recordChildrenSuccess
+        });
+    }*@
+    function DocoDragpropertydropped(e) {
+        alert('here');
+        var draggableElement = e.draggable.currentTarget;
+        var node = draggableElement.parent();
+        var dragged = node["0"];
+        var prop = dragged.dataset.prop;
+        var p = jQuery.parseJSON(prop);
+        var text = p["FriendlyLabel"];
+        var dataMessage = {
+            frameEditorId: "iframeEditor",
+            guid: "asc.{A8705DEE-7544-4C33-B3D5-168406D92F72}",
+            type: "onExternalPluginMessage",
+            data: {
+                type: "close",
+                text: "text"
+            }
+        };
+        dataMessage.data.type = "insertText";
+        dataMessage.data.text = text;
+        var iframe = document.getElementsByName("frameEditor")[0];
+        if (iframe)
+            iframe.contentWindow.postMessage(JSON.stringify(dataMessage), "*");
+        e.preventDefault();
+    }
+
+    function ViewClick(event, e, canedit) {
+        viewDocs.push(e);
+        var charm = document.getElementById("workspace");
+        //$('#DownloadWSButton').on('click touchstart', function() { DownLoadClickView(e) });
+        //$('#DownloadWSButton').show();
+        showMetroCharm(charm);
+        $("#workspacePL").show();
+        $.ajax({
+            url: '@Url.Action("DocumentView", "Document")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { uri: e },
+            success: function(result) {
+                RefreshTile(e);
+                var partial = document.getElementById("DocumentPartial");
+                partial.innerHTML = result;
+                var docmodel = $("#DocumentModelContainer").attr("data-model");
+                var m = jQuery.parseJSON(docmodel);
+                $("#placeholder").html("");
+                InitialiseDocument(m);
+                if (canedit === 'True') {
+                    $('#EditWSButton').on('click touchstart', function() { EditClick(event, e) });
+                    $('#EditWSButton').show();
+                } else {
+                    $('#EditWSButton').on('click touchstart', function() {});
+                    $('#EditWSButton').hide();
+                }
+                $('#ViewWSButton').on('click touchstart', function() {});
+                $('#ViewWSButton').hide();
+                $('#CheckinWSButton').on('click touchstart', function() {});
+                $('#CheckinWSButton').hide();
+                $('#CancelEditWSButton').on('click touchstart', function() {});
+                $('#CancelEditWSButton').hide();
+                $("#workspacePL").hide();
+            }
+        });
+    }
+
+    //function DownloadClick(e) {
+    //    var pathAndQuery = "?id=" + e;
+    //    var url = '../Home/DownloadEdit' + pathAndQuery;
+    //    window.location = url;
+    //}
+    //function DownLoadClickView(e) {
+    //    var pathAndQuery = "?id=" + e;
+    //    var url = '../Home/DownloadView' + pathAndQuery;
+    //    window.location = url;
+    //}
+    function CancelEdit(e) {
+        var charm = document.getElementById("workspace");
+
+        $("#workspacePL").show();
+        var docmodel = $("#DocumentModelContainer").attr("data-model");
+        var m = jQuery.parseJSON(docmodel);
+
+        $.ajax({
+            url: '@Url.Action("DocServerCommand", "Document")',
+            type: 'post',
+            cache: false,
+            async: false,
+            data: {
+                "cc": "drop",
+                "keyc": m.FileModel.Key,
+                "userdatac": "cancel||" + e
+            },
+            success: function (result) {
+                RefreshTile(e);
+                $("#workspacePL").hide();
+                hideMetroCharm(charm);
+            }
+
+        });
+
+        @*$.ajax({
+            url: '@Url.Action("CancelDocument", "Document")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { uri: e },
+            success: function(result) {
+                RefreshTile(e);
+                $("#workspacePL").hide();
+                hideMetroCharm(charm);
+            }
+        });*@
+    }
+
+    function EditClick(event, e) {
+
+        editDocs.push(e);
+        //$('#DownloadWSButton').on('click touchstart', function() { DownloadClick(e) });
+        //$('#DownloadWSButton').show();
+        var charm = document.getElementById("workspace");
+        showMetroCharm(charm);
+        $("#workspacePL").show();
+        $.ajax({
+            url: '@Url.Action("DocumentEdit", "Document")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { uri: e },
+            success: function(result) {
+                var partial = document.getElementById("DocumentPartial");
+                partial.innerHTML = result;
+                RefreshTile(e);
+                var docmodel = $("#DocumentModelContainer").attr("data-model");
+                var m = jQuery.parseJSON(docmodel);
+                $("#placeholder").html("");
+                InitialiseDocument(m);
+                $('#EditWSButton').on('click touchstart', function() {});
+                $('#EditWSButton').hide();
+                $('#ViewWSButton').on('click touchstart', function() {});
+                $('#ViewWSButton').hide();
+                $('#CheckinWSButton').on('click touchstart', function() { CheckinClick(e) });
+                $('#CheckinWSButton').show();
+                $('#CancelEditWSButton').on('click touchstart', function() { CancelEdit(e) });
+                $('#CancelEditWSButton').show();
+                $("#workspacePL").hide();
+            }
+        });
+    }
+    
+    function ResetBreadCrumbDiv(app, title, search) {
+        var s = jQuery.parseJSON(search);
+        var bchtml =
+            "<ul class='breadcrumbs2 dark " +
+                ct.light +
+                " small'  style='  width: 100%;'><li><a href='#' onclick='HomeClicked()'><span class='icon mif-home'></span></a></li>";
+         bcids = [];
+        bcids.push('TileTitle');
+        bchtml = bchtml +
+            "<li id='TileTitle'><a href='#0' onclick='TileClicked(event," +
+            quoteAndEscape(title) +
+            ", " +
+            JSON.stringify(search) +
+            ", " +
+            quoteAndEscape(title) +
+            ")'>" +
+            "<span class='" +
+            s.Css +
+            "' style='margin-right: 2px;'></span><span >" +
+            title +
+            "</span>" +
+            "</a></li>";
+        bc = bchtml;
+    }
+
+    function ResetBreadCrumbDivQuickSearch(term) {
+
+        var bchtml =
+            "<ul class='breadcrumbs2 dark  " +
+                ct.light +
+                " small'  style='  width: 100%;'><li><a href='#' onclick='HomeClicked()'><span class='icon mif-home'></span></a></li>";
+         bcids = [];
+        bcids.push('TileTitle');
+        bchtml = bchtml +
+            "<li id='TileTitle'><a href='#0' onclick='quickSearch(" +
+            quoteAndEscape(term) +
+            ")'>" +
+            "<span class='icon mif-search bg-blue fg-grayLighter' style='margin-right: 2px;'></span><span >" +
+            term +
+            "</span>" +
+            "</a></li>";
+        bc = bchtml;
+    }
+
+    function BreadCrumbDiv(title, uri) {
+        var css = "mif-folder-open icon";
+        var bgstyle = "color: #F9BC2B; margin-right: 2px;";
+        if (_.indexOf(bcids, uri) === -1) {
+            bcids.push(uri);
+            bc = bc +
+                "<li id='li" +
+                uri +
+                "'><a href='#0' class='current' onclick='Bcclicked(" +
+                uri +
+                ", " +
+                quoteAndEscape(title) +
+                ")'>" +
+                "<span class='" +
+                css +
+                "' style='" +
+                bgstyle +
+                "'></span>" +
+                title.trunc(15, false) +
+                "</a></li> ";
+        }
+       
+    }
+
+    function Bcclicked(uri, title) {
+        bcids.reverse();
+        var index = 0;
+        var count = 0;
+        var loopactive = true;
+        bcids.forEach(function(item) {
+            var span;
+            var wrap;
+            var ht;
+            if (loopactive) {
+                count = count + 1;
+                span = document.getElementById("li" + item);
+                wrap = document.createElement('div');
+                wrap.appendChild(span.cloneNode(true));
+                ht = wrap.innerHTML.replace(/'/g, '\&#39;').replace(/"/g, "'").replace('&gt;&gt;', '>>');
+                bc = bc.replace(ht, '');
+                $(span).remove();
+            }
+            if (item === uri) {
+                loopactive = false;
+                return;
+            }
+        });
+        bcids.splice(index, count);
+        bcids.reverse();
+        RecordClickedBc(uri);
+    }
+
+    function LeafClicked(leaf, node, pnode, tree) {
+        //tree.toggleNode(event, leaf);
+        $(leaf).dblclick();
+    }
+
+    var selectedRecord;
+    var currentAction;
+
+    function UserClick(event) {
+        event.stopPropagation();
+        var charm = document.getElementById("UserCharm");
+        showMetroCharm(charm);
+    }
+
+    function AddNotesClick(e) {
+        //NotesPartialPL
+        var charm = document.getElementById("NotesCharm");
+        $("#NotesPartialPL").show();
+        var notes = $('#notesTextArea').val();
+        if (notes.length <= 0) {
+            hideMetroCharm(charm);
+            $("#NotesPartialPL").hide();
+            //$.Notify({ keepOpen: false, type: 'alert', caption: 'Notes Mandatory', content: "Please enter Notes." });
+            //$("#NotesPartialPL").hide();
+
+        } else {
+            notes = encodeURIComponent(notes);
+            var pathAndQuery = "?uri=" + e + "&notes=" + notes;
+            var url = crudServiceBaseUrl + '/Records/UpdateNotes' + pathAndQuery;
+            var refreshPathAndQuery = "?id=" + e;
+            var refreshUrl = crudServiceBaseUrl + '/Home/RefreshRecord' + refreshPathAndQuery;
+            $.ajax({
+                type: "POST",
+                url: url,
+                dataType: 'JSONP',
+                success: function () {
+                    RefreshTile(e);
+                    $('#notesTextArea').val('');
+
+                    hideMetroCharm(charm);
+                    $("#NotesPartialPL").hide();
+                }
+            });
+        }
+    }
+
+    function AddNotesProcessClick(recorcdUri, processUri) {
+        //NotesPartialPL
+        $("#NotesPartialPL").show();
+        var notes = $('#notesTextArea').val();
+        notes = encodeURIComponent(notes);
+        if (notes.length <= 0) {
+
+            $.Notify({ keepOpen: false, type: 'alert', caption: 'Notes Mandatory', content: "Please enter Notes." });
+            $("#NotesPartialPL").hide();
+
+        } else {
+            var pathAndQuery = "?uri=" + recorcdUri + "&notes=" + notes;
+            var url = crudServiceBaseUrl + '/Records/UpdateNotes' + pathAndQuery;
+            $.ajax({
+                type: "POST",
+                url: url,
+                dataType: 'JSONP',
+                success: function() {
+                    RefreshProcessTile(processUri);
+                    $('#notesTextArea').val('');
+                    var charm = document.getElementById("NotesCharm");
+                    hideMetroCharm(charm);
+                    $("#NotesPartialPL").hide();
+                }
+            });
+        }
+    }
+
+    function CompleteActionClick(recorduri, actionUri) {
+
+        var notes = $('#CompleteActionTextArea').val();
+        if (notes.length <= 0) {
+
+            $.Notify({ keepOpen: false, type: 'alert', caption: 'Notes Mandatory', content: "Please enter Notes." });
+
+
+        } else {
+            $("#ActionsPartialPL").show();
+            notes = encodeURIComponent(notes);
+            var pathAndQuery = "?&recordUri=" + recorduri + "&actionUri=" + actionUri + "&notes=" + notes;
+            var url = crudServiceBaseUrl + '/Records/CompleteAction' + pathAndQuery;
+            $.ajax({
+                type: "POST",
+                url: url,
+                dataType: 'JSONP',
+                success: function() {
+                    RefreshTile(recorduri);
+                    $('#CompleteActionTextArea').val('');
+                    var charm = document.getElementById("ActionsCharm");
+                    hideMetroCharm(charm);
+                    $("#ActionsPartialPL").hide();
+                }
+            });
+        }
+
+    }
+
+    function AddAction(recordUri) {
+        $.ajax({
+            url: '@Url.Action("AddAction", "Actions")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            dataType: 'JSONP',
+            data: {
+                recordUri: recordUri,
+                actionDefUri: $('#actionTypes').data('kendoComboBox').value(),
+                responsibleLocation: $('#Actionlocations').data('kendoComboBox').value()
+
+            },
+            success: function (result) {
+
+                if (result.Faults.length > 0) {
+                    $.Notify({
+                        keepOpen: false,
+                        type: 'alert',
+                        caption: 'Completion Error',
+                        content: result.Faults[0].Message
+                    });
+                }
+                    else
+                    {
+                     var charm = document.getElementById("ReasignActionCharm");
+                hideMetroCharm(charm);
+
+
+                $("#ActionsPartialPL").show();
+                var charm = document.getElementById("ActionsCharm");
+                showMetroCharm(charm);
+
+                $.ajax({
+                    url: '@Url.Action("GetActionsView", "HomeM")',
+                    type: 'POST',
+                    cache: false,
+                    async: true,
+                    data: { uri: recordUri, vertical: window.verticalView },
+                    success: function(result) {
+                        var partial = document.getElementById("ActionsPartial");
+                        partial.innerHTML = result;
+                        var model = $("#ModelContainer").attr("data-model");
+                        var m = jQuery.parseJSON(model);
+
+                        var nodeorgchart = $("#actionsChart").inforOrgChart({
+                            id: "actionsChart",
+                            data: m.Actions,
+                            nodeClick: "ActionClicked",
+                            nodeTitleField: "Name",
+                            nodeLine1Title: "Responsible:",
+                            nodeLine1Field: "AllocationString",
+                            nodeLine2Title: "Due:",
+                            nodeLine2Field: "DateDueString",
+                            nodeLine3Title: "Duration:",
+                            nodeLine3Field: "DurationString",
+                            allowMultiSelected: false,
+                            renderNode: "renderNodeEventHandler",
+                            idField: "Uri",
+                            parentIdField: "ParentUri",
+                            ShowZoomButtons: true,
+                            vertical: true,
+                            contextNodeid: m.CurrentActionUri,
+                            allowSelect: true
+                        });
+
+                        $("#ActionsPartialPL").hide();
+                        RefreshTile(recordUri);
+                    }
+                });
+                    }
+
+
+            }
+        });
+    }
+
+    function ReasignAction(actUri, recordUri) {
+        var d = $('#days').val();
+        var h = $('#hours').val();
+        var m = $('#minutes').val();
+        if (d == undefined)
+            d = 0;
+        if (h == undefined)
+            h = 0;
+        if (m == undefined)
+            m = 0;
+
+        $.ajax({
+            url: '@Url.Action("UpdateAction", "Actions")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            dataType: 'JSONP',
+            data: {
+                actionUri: actUri,
+                responsibleLocation: $('#Actionlocations').data('kendoComboBox').value(),
+                days: d,
+                hours: h,
+                minutes: m
+
+            },
+            success: function (result) {
+                if (result.Faults.length > 0) {
+                    $.Notify({
+                        keepOpen: false,
+                        type: 'alert',
+                        caption: 'Completion Error',
+                        content: result.Faults[0].Message
+                    });
+                }
+                else {var charm = document.getElementById("ReasignActionCharm");
+                hideMetroCharm(charm);
+
+
+                $("#ActionsPartialPL").show();
+                var charm = document.getElementById("ActionsCharm");
+                showMetroCharm(charm);
+
+                $.ajax({
+                    url: '@Url.Action("GetActionsView", "HomeM")',
+                    type: 'POST',
+                    cache: false,
+                    async: true,
+                    data: { uri: recordUri, vertical: window.verticalView },
+                    success: function(result) {
+                        var partial = document.getElementById("ActionsPartial");
+                        partial.innerHTML = result;
+                        var model = $("#ModelContainer").attr("data-model");
+                        var m = jQuery.parseJSON(model);
+
+                        var nodeorgchart = $("#actionsChart").inforOrgChart({
+                            id: "actionsChart",
+                            data: m.Actions,
+                            nodeClick: "ActionClicked",
+                            nodeTitleField: "Name",
+                            nodeLine1Title: "Responsible:",
+                            nodeLine1Field: "AllocationString",
+                            nodeLine2Title: "Due:",
+                            nodeLine2Field: "DateDueString",
+                            nodeLine3Title: "Duration:",
+                            nodeLine3Field: "DurationString",
+                            allowMultiSelected: false,
+                            renderNode: "renderNodeEventHandler",
+                            idField: "Uri",
+                            parentIdField: "ParentUri",
+                            ShowZoomButtons: true,
+                            vertical: true,
+                            contextNodeid: actUri,
+                            allowSelect: true
+                        });
+
+                        $("#ActionsPartialPL").hide();
+                        RefreshTile(recordUri);
+                    }
+                });}
+
+
+
+            }
+        });
+    }
+
+    function AddActionClick(recordUri) {
+        var charm = document.getElementById("ReasignActionCharm");
+        showMetroCharm(charm);
+        $("#ReasignActionPartialPL").show();
+        $.ajax({
+            url: '@Url.Action("GetActionDetails", "Actions")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: {
+                uri: 0,
+                recUri: recordUri
+            },
+            success: function(result) {
+
+                $("#ReasignActionPartial").html(result);
+                $("#actionTypes").kendoComboBox({
+                    filter: "contains",
+                    autoWidth: true,
+                    dataTextField: "Name",
+                    dataValueField: "Uri",
+                    placeholder: "Select...",
+                    dataSource: {
+                        transport: {
+                            read: {
+                                dataType: "jsonp",
+                                url: '@Url.Action("GetActionTypes", "Actions")'
+                            }
+                        }
+                    },
+                    height: 400
+                });
+                var url = crudServiceBaseUrl + '/odata/Locations' ;
+                var templateContent = $("#LocationTemplate").html();
+               $("#Actionlocations").kendoComboBox({
+                    filter: "contains",
+                    autoWidth: true,
+                    dataTextField: "Name",
+                    dataValueField: "UserId",
+                    placeholder: "Select...",
+
+                    virtual: {
+                        itemHeight: 26,
+                        valueMapper: function(options) {
+                            $.ajax({
+                                url: '@Url.Action("ValueMapper","users")',
+                                type: "GET",
+                                dataType: "jsonp",
+                                data: convertValues(options.value),
+                                success: function(data) {
+                                    options.success(data);
+                                }
+                            });
+                        }
+                    },
+                    dataSource: {
+                        type: "odata-v4",
+                        transport: {
+                            read: {
+                                data: { "currentUri": 0 },
+                                url: url
+                            }
+                        },
+                        schema: {data: "value"},
+                        pageSize: 10,
+                        serverPaging: true,
+                        serverFiltering: true
+                    },
+                    height: 400
+                });
+
+                var widget = $("#actionTypes").data("kendoComboBox");
+                //window.stopScroll(widget.ul.parent());
+                $("#ReasignActionPartialPL").hide();
+                CreateRadControls();
+            }
+        });
+    }
+    function convertValues(value) {
+        var data = {};
+
+        value = $.isArray(value) ? value : [value];
+
+        for (var idx = 0; idx < value.length; idx++) {
+            data["values[" + idx + "]"] = value[idx];
+        }
+
+        return data;
+    }
+    function ReasignActionClick(actionUri, recUri, currentLocationUri, currentAction) {
+        var charm = document.getElementById("ReasignActionCharm");
+        showMetroCharm(charm);
+        $("#ReasignActionPartialPL").show();
+
+
+        $.ajax({
+            url: '@Url.Action("GetActionDetails", "Actions")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { uri: actionUri, recUri: recUri },
+            success: function(result) {
+
+
+                $("#ReasignActionPartial").html(result);
+                $("#actionTypes").kendoComboBox({
+                    autoWidth: true,
+                    height: 400,
+                    enable: false
+                });
+                var templateContent = $("#LocationTemplate").html();
+                var template = kendo.template(templateContent);
+                var url = crudServiceBaseUrl + '/odata/Locations' ;
+                var templateContent = $("#LocationTemplate").html();
+                $("#Actionlocations").kendoComboBox({
+                    autoWidth: true,
+                    filter: "contains",
+                    dataTextField: "Name",
+                    dataValueField: "UserId",
+                    placeholder: "Select...",
+                   virtual: {
+                        itemHeight: 26,
+                        valueMapper: function(options) {
+                            $.ajax({
+                                url: '@Url.Action("ValueMapper","users")',
+                                type: "GET",
+                                dataType: "jsonp",
+                                data: convertValues(options.value),
+                                success: function(data) {
+                                    options.success(data);
+                                }
+                            });
+                        }
+                    },
+                    dataSource: {
+                        type: "odata-v4",
+                        transport: {
+                            read: {
+                                data: { "currentUri": currentLocationUri },
+                                url: url
+                            }
+                        },
+                        schema: {data: "value"},
+                        pageSize: 10,
+                        serverPaging: true,
+                        serverFiltering: true
+                    },
+                    value:currentLocationUri,
+                    height: 400
+                });
+                //var combobox = $("#Actionlocations").data("kendoComboBox");
+                //combobox.select(currentLocationUri);
+
+                var actionTypescombobox = $("#actionTypes").data("kendoComboBox");
+                actionTypescombobox.value(currentAction);
+
+                //var widget = $("#actionTypes").data("kendoComboBox");
+                //window.stopScroll(widget.ul.parent());
+                $("#ReasignActionPartialPL").hide();
+                CreateRadControls();
+            }
+        });
+    }
+
+    function RecordClickedBc(uri) {
+        var refreshPathAndQuery = "?id=" + uri;
+        var refreshUrl = crudServiceBaseUrl + '/Home/RefreshRecord' + refreshPathAndQuery;
+        $.ajax({
+            type: "GET",
+            url: refreshUrl,
+            dataType: 'JSONP',
+            success: function(result) {
+                BrowseRecord(result);
+            }
+        });
+    }
+
+    function BrowseRecord(record) {
+        var pinlayout = document.getElementById('PinnedTilesPartial');
+        pinlayout.style.display = 'none';
+        var mainlayout = document.getElementById('MainPartialContainer');
+        mainlayout.style.display = 'block';
+        $("#MainPartialContainerPL").show();
+        $.ajax({
+            url: '@Url.Action("RecordClicked", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { id: record.Uri, verticalTrees: model.VerticalTrees },
+            success: function(result) {
+                $("#MainPartialContainer").html(result);
+                BreadCrumbDiv(record.Title, record.Uri);
+                $("#bc").html(bc);
+                $("#MainPartialContainerPL").hide();
+            }
+        });
+    }
+
+    function RecordClicked(uri) {
+        var refreshPathAndQuery = "?id=" + uri;
+        var refreshUrl = crudServiceBaseUrl + '/Home/RefreshRecord' + refreshPathAndQuery;
+        $.ajax({
+            type: "GET",
+            url: refreshUrl,
+            dataType: 'JSONP',
+            success: function(result) {
+                BrowseRecord(result);
+            }
+        });
+    }
+
+    function RecordClickedCrmLss(uri) {
+        var pinlayout = document.getElementById('PinnedTilesPartial');
+        pinlayout.style.display = 'none';
+        var mainlayout = document.getElementById('MainPartialContainer');
+        mainlayout.style.display = 'block';
+        var idExplore = '#TileExplore' + uri;
+        var idCaro = '#caro' + uri;
+        var idTile = '#' + uri;
+        var idPl = '#PL' + uri;
+        var looptileId;
+        if ($(idTile)[0].parentNode.parentNode.id.indexOf('TileExplore') === -1) {
+            $('.tile-super').each(function(i, r) {
+                looptileId = '#TileExplore' + $(r).id;
+                $(r).addClass('tile-wide');
+                $(r).removeClass('tile-super');
+                $(r).width(310);
+                $(looptileId).html(r);
+            });
+        }
+        $(idTile).removeClass('tile-wide');
+        $(idTile).addClass('tile-super');
+        $(idTile).width('95%');
+        $(idPl).show();
+        var refreshPathAndQuery = "?id=" + uri;
+        var refreshUrl = crudServiceBaseUrl + '/Home/RefreshRecord' + refreshPathAndQuery;
+        $.ajax({
+            type: "GET",
+            url: refreshUrl,
+            dataType: 'JSONP',
+            async: true,
+            success: function(result) {
+                $.ajax({
+                    url: '@Url.Action("RecordClicked", "HomeM")',
+                    type: 'POST',
+                    cache: false,
+                    async: true,
+                    data: { id: result.Uri, verticalTrees: model.VerticalTrees },
+                    success: function(r) {
+                        $(idExplore).html(r);
+                        BreadCrumbDiv(result.Title, result.Uri);
+                        $("#bc").html(bc);
+                        $(idPl).hide();
+                    }
+                });
+            }
+        });
+    }
+
+    function TileClicked(event, title, search, app) {
+        refresh = false;
+        $("#MainPartialContainerPL").show();
+        var pinlayout = document.getElementById('PinnedTilesPartial');
+        var mainlayout = document.getElementById('MainPartialContainer');
+        mainlayout.style.display = 'block';
+        var s = jQuery.parseJSON(search);
+        if (s.App === "Reporting") {
+            @*$.ajax({
+                url: '@Url.Action("ReportViewer", "Reports")',
+                type: 'POST',
+                cache: false,
+                async: true,
+                data: { id: s.Function },
+                success: function(result) {
+                    $("#MainPartialContainer").html(result);
+                    ResetBreadCrumbDiv(app, title, search);
+                    $("#bc").html(bc);
+
+                    //var partial = document.getElementById("");
+                    //partial.innerHTML = result;
+                }
+            });*@
+
+
+
+            var reportAction = "/Reports/ReportViewerPage" + "?id=" + s.Function;
+            window.open(reportAction, '_blank');
+            $("#MainPartialContainerPL").hide();
+            return false;
+        }
+        pinlayout.style.display = 'none';
+        if (s.App === "Search" || s.App === "Process") {
+            $.ajax({
+                url: '@Url.Action("TileClicked", "HomeM")',
+                type: 'POST',
+                cache: false,
+                async: true,
+                data: { incommingsearch: JSON.stringify(s), verticalTrees: model.VerticalTrees },
+                success: function(result) {
+                    $("#MainPartialContainerPL").hide();
+                    $("#MainPartialContainer").html(result);
+                    ResetBreadCrumbDiv(app, title, search);
+                    $("#bc").html(bc);
+                    $("[data-role=carousel]")
+                        .each(function(index, item) {
+                            $(item).attr("data-auto", window.autoScrollCaro);
+                            //$(item).data('carousel').setAuto(window.autoScrollCaro);
+                        });
+                }
+            });
+        }
+        if (s.App === "Administration") {
+            if (s.Function === 'ExportManager')
+                $.ajax({
+                    url: '@Url.Action("Index", "Reports")',
+                    type: 'POST',
+                    cache: false,
+                    async: true,
+                    data: {},
+                    success: function(result) {
+                        $("#MainPartialContainerPL").hide();
+                        $("#MainPartialContainer").html(result);
+                        ResetBreadCrumbDiv(app, title, search);
+                        $("#bc").html(bc);
+                    }
+                });
+        }
+        if (s.App === "inBox") {
+            $.ajax({
+                url: '@Url.Action("EmailFolderClicked", "HomeM")',
+                type: 'POST',
+                cache: false,
+                async: true,
+                data: { folderid: s.Function },
+                success: function(result) {
+                    $("#MainPartialContainerPL").hide();
+                    $("#MainPartialContainer").html(result);
+                    ResetBreadCrumbDiv(app, title, search);
+                    $("#bc").html(bc);
+                }
+            });
+        }
+
+
+    }
+
+    function RefreshTile(id) {
+        var tile = document.getElementById('swipearea' + id);
+        $("#PL" + id).show();
+        $.ajax({
+            url: '@Url.Action("RefreshRecordTile", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { uri: id },
+            success: function(result) {
+                $("#PL" + id).hide();
+                $(tile).html(result);
+
+                $("[data-role=carousel]")
+                    .each(function(index, item) {
+                        $(item).attr("data-auto", window.autoScrollCaro);
+                        //$(item).data('carousel').setAuto(window.autoScrollCaro);
+                    });
+                $(".carousel").kendoTouch({
+                    filter: ".slide",
+                    enableSwipe: true,
+                    swipe: function (e) {
+                        console.log('swipe');
+                        if (e.direction === 'right') {
+                            $(e.sender.element["0"]).data('carousel').priorSlide();
+                            e.sender.cancel();
+                        }
+                        if (e.direction === 'left') {
+                            $(e.sender.element["0"]).data('carousel').nextSlide();
+                            e.sender.cancel();
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    function RefreshProcessTile(id) {
+        var tile = document.getElementById('swipearea' + id);
+        var jid = "#PL" + id;
+        $(jid).show();
+        $.ajax({
+            url: '@Url.Action("RefreshProcessTile", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { uri: id },
+            success: function(result) {
+                $(jid).hide();
+                $(tile).html(result);
+
+                $("[data-role=carousel]")
+                    .each(function(index, item) {
+                        $(item).attr("data-auto", window.autoScrollCaro);
+                        //$(item).data('carousel').setAuto(window.autoScrollCaro);
+                    });
+                $(".carousel").kendoTouch({
+                    filter: ".slide",
+                    enableSwipe: true,
+                    swipe: function (e) {
+                        console.log('swipe');
+                        if (e.direction === 'right') {
+                            $(e.sender.element["0"]).data('carousel').priorSlide();
+                            e.sender.cancel();
+                        }
+                        if (e.direction === 'left') {
+                            $(e.sender.element["0"]).data('carousel').nextSlide();
+                            e.sender.cancel();
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    function jobContextMenu(e, title, id) {
+        refresh = false;
+        metroDialog.open('#JobContextMenu');
+        $('#deleteTitle').text(title);
+        $('#cloneTitle').text("Clone " + title);
+        $('#DeleteConfirmationTitle').text('Delete ' + title);
+        $("#deleteJobButtonCTX").unbind('click');
+        $('#deleteJobButton').unbind('click');
+        $('#CloneJobButtonCTX').unbind('click');
+        $("#deleteJobButtonCTX").on("click",
+            function() {
+                metroDialog.close('#JobContextMenu');
+                metroDialog.open('#DeleteJobConfirmation');
+            });
+        $('#deleteJobButton').on("click", function() { DeleteExportJob(event, id); });
+        $('#CloneJobButtonCTX').on("click",
+            function() {
+                metroDialog.close('#JobContextMenu');
+                CloneExportJob(event, id);
+            });
+        refresh = true;
+        e.preventDefault();
+    }
+
+    function CompleteStepClicked(event, uri, rUri) {
+        event.stopPropagation();
+        var charm = document.getElementById("CompleteTaskCharm");
+        showMetroCharm(charm);
+        $("#CompleteProcessDialogPartialPL").show();
+        $.ajax({
+            url: '@Url.Action("GetCompleteStepPartialView", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { uri: uri, rootUri: rUri },
+            success: function(result) {
+                var partial = document.getElementById("CompleteProcessDialogPartial");
+                partial.innerHTML = result;
+                $("#TaskFlags").kendoComboBox({
+                    highlightFirst: true,
+                    suggest: true
+                });
+
+                @*var dataSource = new kendo.data.DataSource({
+                    transport: {
+                        read: {
+                            read: {
+                                url:'@Url.Action("GetProcessCompletionStamps", "HomeM")',
+                                dataType: "jsonp",
+                                data: { uri: uri, rootUri: rUri }
+                            }
+                        }
+                    }
+                });
+                console.log(dataSource);
+                $("#TaskFlags").kendoComboBox({
+                    dataSource: dataSource,
+                    dataTextField: "DisplayString",
+                    dataValueField: "DisplayString"
+                });*@
+
+
+
+                $("#CompleteProcessDialogPartialPL").hide();
+            }
+        });
+    }
+
+    function CompleteStepFinalClicked(uri, rootUri) {
+        function completeSuccess(result) {
+            $("#CompleteProcessDialogPartialPL").hide();
+            if (result.Faults.length > 0) {
+                $.Notify({
+                    keepOpen: false,
+                    type: 'alert',
+                    caption: 'Completion Error',
+                    content: result.Faults[0].Message
+                });
+
+                //$("#CompleteProcessPartialError").text(result.Faults[0].Message);
+                //$("#CompleteProcessPartialError").css({ 'display': "block" });
+            } else {
+                var charm = document.getElementById("CompleteTaskCharm");
+                hideMetroCharm(charm);
+                var ProcessActionsCharm = document.getElementById("ProcessActionsCharm");
+                hideMetroCharm(ProcessActionsCharm);
+                ProcessClick(event, rootUri);
+            }
+        }
+
+        $("#CompleteProcessDialogPartialPL").show();
+        //var flags = $("#TaskFlags").data("kendoComboBox").value();
+        var flag = $("#TaskFlags").data("kendoComboBox").value();
+        var notes = $('#CompleteNotesTextArea').val();
+        $.ajax({
+            url: '@Url.Action("FlagProcessTask", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            dataType: 'JSONP',
+            data: { uri: uri, stamp: flag, comments: notes },
+            success: completeSuccess
+        });
+    }
+
+    function CreateRadControls() {
+        $(".Date").kendoDatePicker({
+            format: "dd/MM/yyyy"
+        });
+        $.each($(".numerictb"),
+            function(index, item) {
+                if (item.id.length) {
+                    var numeric = $("#" + item.id).data("kendoNumericTextBox");
+                    if (numeric != undefined) {
+                        var origin = numeric.element.show();
+                        origin.insertAfter(numeric.wrapper);
+                        numeric.destroy();
+                        numeric.wrapper.remove();
+                    }
+                    $(item).kendoNumericTextBox({ decimals: 0, format: "n0" });
+                }
+
+                // $("#" + $(item).attr('id') + "_timeview").addClass('incharm');
+            });
+    }
+
+    function ReassignClicked(event, uri, rootUri) {
+        var charm = document.getElementById("LocationCharm");
+        showMetroCharm(charm);
+
+
+
+
+        $("#ReassignPartialPL").show();
+        $.ajax({
+            url: '@Url.Action("ReassPartialViewResult", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { id: uri, addBelow: -1, addAbove: -1, ProcessUri: rootUri },
+            success: function(result) {
+                var partial = document.getElementById("ReassignPartial");
+                partial.innerHTML = result;
+                $("#ReassignPartialPL").hide();
+                var templateContent = $("#LocationTemplate").html();
+                var template = kendo.template(templateContent);
+
+                var processmodel = $("#ProcessModelContainer").attr("data-model");
+                var m = jQuery.parseJSON(processmodel);
+
+                $("#Processlocations").kendoComboBox({
+                    filter: "contains",
+                    autoWidth: true,
+                    dataTextField: "Name",
+                    dataValueField: "UserId",
+                   
+                    placeholder: "Select...",
+                    dataSource: {
+                        transport: {
+                            read: {
+                                dataType: "jsonp",
+                                data: { "userId": m.CurrentLocationUri},
+                                url: '@Url.Action("GetLocations", "Users")'
+                            }
+                        }
+                    },
+                    height: 400
+                });
+                var combobox = $("#Processlocations").data("kendoComboBox");
+                combobox.value(m.CurrentLocationUri);
+                var widget = $("#Processlocations").data("kendoComboBox");
+                //window.stopScroll(widget.ul.parent());
+                CreateRadControls();
+            }
+        });
+    }
+
+    function LocationSelected(id, allowMultiSelect) {
+        if (!allowMultiSelect) {
+            $("#LocationPicker").find(".tile").removeClass("element-selected");
+        }
+        if ($("#" + id).hasClass("element-selected")) {
+            $("#" + id).removeClass("element-selected");
+        } else {
+            $("#" + id).addClass("element-selected");
+        }
+    }
+
+    function ReassignNode(nodeUri, responsibleUri, dueDate, notes, addAbove, addBelow, processUri) {
+        if (responsibleUri === "") {
+            $.Notify({
+                keepOpen: false,
+                type: 'alert',
+                caption: 'Responsible Required',
+                content: "Please select the Responsible Location."
+            });
+
+        } else {
+            $("#ReassignPartialPL").show();
+
+            if (dueDate !== null) {
+                dueDate = dueDate.toISOString();
+            }
+
+            $.ajax({
+                url: '@Url.Action("ReasignNode", "HomeM")',
+                type: 'POST',
+                cache: false,
+                async: false,
+                dataType: 'JSONP',
+                data: {
+                    processNode: nodeUri,
+                    responsible: responsibleUri,
+                    dueDate: dueDate,
+                    notes: notes,
+                    addAboveUri: addAbove,
+                    addBelowUri: addBelow
+                },
+                success: function(result) {
+                    $("#ReassignPartialPL").hide();
+                    if (result.Faults.length > 0) {
+                        $.Notify({
+                            keepOpen: false,
+                            type: 'alert',
+                            caption: 'Error Updating',
+                            content: result.Faults[0].Message
+                        });
+                        //$("#ReassignPartialError").text(result.Faults[0].Message);
+                        //$("#ReassignPartialError").css({ 'display': "block" });
+                    } else {
+                        $("#ReassignPartialPL").hide();
+                        var charm = document.getElementById("LocationCharm");
+                        hideMetroCharm(charm);
+                        var ProcessActionsCharm = document.getElementById("ProcessActionsCharm");
+                        hideMetroCharm(ProcessActionsCharm);
+                        ProcessClick(event, processUri);
+                    }
+                }
+            });
+        }
+    }
+
+    var orgchart;
+    $(window).resize(function(evt) {
+        if ($("#ProcessChart").length > 0) {
+            $("#ProcessChart").data('inforOrgChart').resizeChart();
+        }
+    });
+
+    function processTable(data, idField, foreignKey, rootLevel) {
+        var hash = {};
+        console.log(data);
+        for (var i = 0; i < data.length; i++) {
+            var item = data[i];
+            var id = item[idField];
+            if (item[foreignKey] === null)
+                item[foreignKey] = 0;
+            var parentId = item[foreignKey];
+            hash[id] = hash[id] || [];
+            hash[parentId] = hash[parentId] || [];
+            item.items = hash[id];
+            hash[parentId].push(item);
+        }
+        console.log(hash[rootLevel]);
+        return hash[rootLevel];
+    }
+
+    function nodeclick(item) {
+        $("#ProcessActionsPL").show();
+        var ProcessActionsCharm = document.getElementById("ProcessActionsCharm");
+        //showMetroCharm(ProcessActionsCharm);
+        var partial = document.getElementById("ProcessActionsPartial");
+        $("#ProcessActionsPartial").empty();
+        $.ajax({
+            url: '@Url.Action("GetProcessActions", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: {
+                uri: item.Uri,
+                processRootUri: item.ProcessParentUri
+            },
+            success: function(result) {
+                partial.innerHTML = result;
+                $("#ProcessActionsPL").hide();
+            }
+        });
+    }
+
+    function renderNode(tile, item) {
+        var status = parseInt(item.Status);
+        var colour;
+        switch (status) {
+        case 0:
+            colour = "blue"; //Current
+            break;
+        case 1:
+            colour = "orange"; //Pending
+            break;
+        case 2:
+            colour = "gray"; //Cancelled
+            break;
+        case 3:
+            colour = "green"; //Completed
+            break;
+        case -1:
+            colour = "red"; //Completed
+            break;
+        }
+        $(tile)[0].style.backgroundColor = colour;
+    }
+
+    function ProcessClick(event, uri) {
+        event.stopPropagation();
+        var charm = document.getElementById("ProcessCharm");
+        showMetroCharm(charm);
+        $("#ProcessPartialPL").show();
+        $.ajax({
+            url: '@Url.Action("GetProcessView", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { uri: uri, vertical: window.verticalView },
+            success: function(result) {
+                var partial = document.getElementById("ProcessPartial");
+                partial.innerHTML = result;
+                var model = $("#ProcessChart").attr("data-model");
+                var m = jQuery.parseJSON(model);
+                var contextNode = _.find(m.FlatNodes, function(i) { return i.IsWithUser === true });
+                var contextNodeId = null;
+                if (contextNode !== undefined) {
+                    contextNodeId = contextNode.Uri;
+                }
+                orgchart = $("#ProcessChart").inforOrgChart({
+                    id: "ProcessChart",
+                    data: m.FlatNodes,
+                    nodeClick: "nodeclick",
+                    nodeTitleField: "AllocationString",
+                    nodeTitleImage: "StatusImage",
+                    nodeLine1Field: "StatusString",
+                    nodeLine1Title: "Status:",
+                    nodeLine2Field: "DateDueString",
+                    nodeLine2Title: "Due:",
+                    nodeLine3Field: "DisplayNotesShort",
+                    nodeLine3Title: "Notes:",
+                    allowMultiSelected: false,
+                    contextNodeid: contextNodeId,
+                    renderNode: "renderNode",
+                    idField: "Uri",
+                    parentIdField: "ParentUri"
+                });
+                $("#ProcessPartialPL").hide();
+            }
+        });
+    }
+
+    function initDraggablePropertiesNode(node) {
+        $(node).find(".leaf").each(function(i, it) {
+            $(it).kendoDraggable({
+                group: "DragProperty",
+                autoScroll: false,
+                hint: function(element) { //create a UI hint, the `element` argument is the dragged item
+                    return element.clone();
+                }
+            });
+        });
+    }
+
+    function onDrop(e) {
+        var tree = $('#treeview').data('kendoTreeView');
+        var dataItem = tree.dataItem(e.sourceNode);
+        var p = dataItem; //jQuery.parseJSON(dataItem);
+        var list = document.getElementById('addedProps');
+        var bef = $(e.sender.dragging.dropHint["0"]).physicallyClosest(".list");
+        if (bef["0"] === undefined || bef["0"].parentElement.id !== 'addedProps') {
+            bef = false;
+        }
+        var l = $("<div/>").addClass("list");
+        var s = $("<span/>").addClass("list-title").appendTo(l);
+        l.attr('data-prop', JSON.stringify(p));
+        s.html(p["FriendlyLabel"]);
+        if (bef === false) {
+            l.appendTo(list);
+        } else {
+            bef.after(l);
+        }
+        l.kendoDraggable({
+            group: "AddedPropDrag",
+            dragend: AddedPropDragEnd,
+            hint: function(element) {
+                return element.clone();
+            }
+        });
+        e.preventDefault();
+    }
+
+    function AddedPropDragEnd(e) {
+        var dragged = e.currentTarget["0"];
+        if (e.target) {
+            var parent = e.currentTarget["0"].parentElement;
+            if (parent.id === "addedProps") {
+                var prop = dragged.dataset.prop;
+                var p = jQuery.parseJSON(prop);
+                var bef = $(e.sender.hint).physicallyClosest(".list");
+                var l = $("<div/>").addClass("list");
+                var s = $("<span/>").addClass("list-title").appendTo(l);
+                l.attr('data-prop', JSON.stringify(p));
+                l.kendoDraggable({
+                    group: "AddedPropDrag",
+                    dragend: AddedPropDragEnd,
+                    hint: function(element) {
+                        return element.clone();
+                    }
+                });
+                s.html(p["FriendlyLabel"]);
+                if (bef === false) {
+                    l.appendTo(list);
+                } else {
+                    bef.after(l);
+                }
+                dragged.remove();
+            }
+        }
+    }
+</script>
+<script type="text/x-kendo-template" id="LocationTemplate">
+    <span class="k-state-default" style="background-image: url('#: data.UserImagePath #')"></span>
+    <span class="k-state-default">
+        <h3>#: data.Name #</h3>
+        <p>#: data.Position #</p>
+        <p>#: data.Email #</p> 
+    </span>
+</script>

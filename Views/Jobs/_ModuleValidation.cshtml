@@ -1,0 +1,23 @@
+﻿@using System.Web.Script.Serialization
+@model inReachWebRebuild.ViewModels.ModuleValidationViewModel
+@{ var serializer = new JavaScriptSerializer {MaxJsonLength = int.MaxValue}; }
+@{
+    var jsonModule = serializer.Serialize(Model.Module);
+}
+<div style="color: white;">
+    @Html.Raw(Model.ErrorDisplay.Show(400, false))
+</div>
+
+<div style="display: none" id="ValidationModuleContainer" data-validationmodule="@jsonModule"></div>
+<div id="console" ></div>
+@{
+    if (Model.ValidationResult.Faults.Any()) {
+        <span style="word-wrap:break-word; display: block; width:100%">There are Faults with the Module please review errors below</span>
+        foreach (var fault in Model.ValidationResult.Faults) {
+            <span style="word-wrap:break-word; display: block; width:100%"> @fault.Message </span>
+            <br/>
+        }
+    } else {
+        <span style="word-wrap:break-word; display: block; width:100%">There are no faults with the Module and the expected return type is valid</span>
+    }
+}

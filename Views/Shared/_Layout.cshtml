@@ -1,0 +1,96 @@
+﻿@using System.Configuration
+@using Infor.Model.ApplicationServices
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+    <title>@ViewBag.Title</title>
+    @*@Styles.Render("~/Content/css")*@
+    @Scripts.Render("~/bundles/modernizr")
+    <!--This bundle was moved by the Telerik VS Extensions for compatibility reasons-->
+    @Scripts.Render("~/bundles/jquery")
+    @*@Scripts.Render("~/bundles/bootstrap")*@
+    @RenderSection("extraStyles", false)
+    <!--This CSS entry was added by the Telerik VS Extensions for compatibility reasons-->
+    @*<link href="@Url.Content("~/Content/kendo.compatibility.css")" rel="stylesheet" type="text/css" />
+	<link href="@Url.Content("~/Content/kendo2016.3/kendo.blueopal.min.css")" rel="stylesheet" type="text/css" />*@
+    @*<link href="@Url.Content("~/Content/kendo2016.3/kendo.mobile.all.min.css")" rel="stylesheet" type="text/css" />
+    <link href="@Url.Content("~/Content/kendo2016.3/kendo.dataviz.min.css")" rel="stylesheet" type="text/css" />
+    <link href="@Url.Content("~/Content/kendo2016.3/kendo.black.min.css")" rel="stylesheet" type="text/css" />*@
+    @*<link href="@Url.Content("~/Content/kendo2016.3/kendo.office365.min.css")" rel="stylesheet" type="text/css" />*@
+    @*<link href="@Url.Content("~/Content/kendo2016.3/kendo.dataviz.blueopal.min.css")" rel="stylesheet" type="text/css" />*@
+    @*<script src="@Url.Content("~/Scripts/kendo/2016.3/jquery.min.js")"></script>*@
+    <link rel="apple-touch-icon" sizes="57x57" href="~/Content/favicon/apple-icon-57x57.png">
+    <link rel="apple-touch-icon" sizes="60x60" href="~/Content/favicon/apple-icon-60x60.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="~/Content/favicon/apple-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="76x76" href="~/Content/favicon/apple-icon-76x76.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="~/Content/favicon/apple-icon-114x114.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="~/Content/favicon/apple-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="~/Content/favicon/apple-icon-144x144.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="~/Content/favicon/apple-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="~/Content/favicon/apple-icon-180x180.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="~/Content/favicon/android-icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="~/Content/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="~/Content/favicon/favicon-96x96.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="~/Content/favicon/favicon-16x16.png">
+    <link rel="manifest" href="../../Content/favicon/manifest.json">
+    <meta name="msapplication-TileColor" content="#ffffff">
+    <meta name="msapplication-TileImage" content="../../Content/favicon/ms-icon-144x144.png">
+    <meta name="theme-color" content="#ffffff">
+    <link href="~/content/metro-icons.css" rel="stylesheet">
+    <link href="~/Content/Custom.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="~/Content/metro.css">
+   
+    <script src="~/Scripts/kendo.all.min.js"></script>
+    
+    <script src="~/Scripts/kendo.aspnetmvc.min.js"></script>
+    
+    <script src="~/scripts/select2.min.js"></script>
+    <script src="~/scripts/moment.js"></script>
+    <script src="~/scripts/underscore.js"></script>
+    <script src="~/scripts/metro.js"></script>
+   
+    <script src="~/scripts/bower_components/hammerjs/hammer.js"></script>
+   
+    <script src="~/Scripts/InforOrgChart.js" charset="utf-8"></script>
+    
+    @*<script src="https://d3js.org/d3.v4.min.js"></script>*@
+
+    <script src="~/Scripts/d3.v4.min.js"></script>
+    
+    <link href="~/Content/metro-schemes.css" rel="stylesheet"/>
+    <link href="~/Content/metro-colors.css" rel="stylesheet"/>
+    
+    <script src="~/ReportViewer/js/telerikReportViewer-12.0.18.125.min.js"></script>
+    <script src="~/scripts/site.js"></script>
+   
+    <script src="~/Scripts/svgDraw.js"></script>
+   
+    @*<link rel="stylesheet" href="http://kendo.cdn.telerik.com/2017.2.504/styles/kendo.common.min.css" />*@
+    <link href="~/Content/kendo.common.min.css" rel="stylesheet" />
+    @*<link rel="stylesheet" href="http://kendo.cdn.telerik.com/2017.2.504/styles/kendo.blueopal.min.css" />*@
+    <link href="~/Content/kendo.blueopal.min.css" rel="stylesheet" />
+   @if (!string.IsNullOrEmpty(@SettingsManager.GetSettingValueAsString("files.docservice.url.api")))
+   {
+    <script type="text/javascript" src="@SettingsManager.GetSettingValueAsString("files.docservice.url.api")"></script>
+   }
+    
+  
+</head>
+<body id="Body" class="bg-grayDarker" style="position: relative;overflow: auto;">
+
+@RenderBody()
+
+
+@RenderSection("scripts", false)
+
+</body>
+</html>
+<script type="text/javascript">
+    var reportserverUri = '@ConfigurationManager.AppSettings["rpurl"]';
+    var crudServiceBaseUrl = '@ConfigurationManager.AppSettings["crudServiceBaseUrl"]';
+    var crudServiceBaseUrlHttp = '@ConfigurationManager.AppSettings["crudServiceBaseUrlHttp"]';
+    var EmailDomainRestrictions = '@ConfigurationManager.AppSettings["EmailDomainRestrictions"]';
+   
+</script>

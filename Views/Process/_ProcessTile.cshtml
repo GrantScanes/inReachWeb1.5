@@ -1,0 +1,172 @@
+﻿@using inReachWebRebuild.Models
+@using Infor.Model.Enums
+@model inReachWebRebuild.ViewModels.ProcessTileViewModel
+@{
+    var appUserState = (AppUserState) ViewData["UserState"];
+    var res = Model.Process;
+    var css = "mif-folder-open mif-2x";
+    var bgstyle = "color: #F9BC2B; padding-right: 5px; padding-left: 5px; padding-top:5px";
+    if (res != null)
+    {
+        if (res.IsElectronic)
+        {
+            css = "mif-file-empty mif-2x";
+            if (res.DocumentType.ToUpper() == "DOCX")
+            {
+                css = "mif-file-word mif-2x";
+                bgstyle = "color: #3A72FF; padding-right: 5px; padding-left: 5px; padding-top:5px";
+            }
+            if (res.DocumentType.ToUpper() == "XLSX")
+            {
+                css = "mif-file-excel mif-2x";
+                bgstyle = "color: #007F0E; padding-right: 5px; padding-left: 5px; padding-top:5px";
+            }
+            if (res.DocumentType.ToUpper() == "PDF")
+            {
+                css = "mif-file-pdf mif-2x";
+                bgstyle = "color: #7F0000; padding-right: 5px; padding-left: 5px; padding-top:5px";
+            }
+            if (res.DocumentType.ToUpper() == "PPTX")
+            {
+                css = "mif-file-powerpoint mif-2x";
+                bgstyle = "color: #FF3030; padding-right: 5px; padding-left: 5px; padding-top:5px";
+            }
+            if (res.DocumentType.ToUpper() == "TXT")
+            {
+                css = "mif-file-text mif-2x fg-gray";
+                bgstyle = "color: #A0EDFF; padding-right: 5px; padding-left: 5px; padding-top:5px";
+            }
+        }
+        else
+        {
+            if (!res.HasChildren)
+            {
+                css = "mif-folder mif-2x";
+                bgstyle = "color: #F9BC2B; padding-right: 5px; padding-left: 5px; padding-top:5px";
+            }
+        }
+        <div id="@($"swipearea{res.Uri}")" class="tileswipe">
+            <div class="tile-wide" style="background: #EDFFFF; z-index: 10;" id="@Html.Raw($"{res.Uri}")">
+                <div class="tile-content">
+                    @if (res.IsElectronic)
+                    {
+                        <span class="@css" style="@bgstyle" OnClick="ViewClick(event, @res.ProcessRecord.Uri, false)"></span>
+                        <span OnClick="ViewClick(event, @res.Uri, false)" id="@res.Uri">
+                            <b>@res.DisplayTitle</b>
+                        </span>
+                    }
+                    else
+                    {
+                        if (res.HasChildren)
+                        {
+                            <span class="@css" style="@bgstyle" onclick="RecordClicked(@res.ProcessRecord.Uri)"></span>
+                            <span onclick="RecordClicked(@res.ProcessRecord.Uri)" id="@res.ProcessRecord.Uri">
+                                <b>@res.DisplayTitle</b>
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="@css" style="@bgstyle"></span>
+                            <span id="@res.ProcessRecord.Uri">
+                                <b>@res.DisplayTitle</b>
+                            </span>
+                        }
+                    }
+                    <div class="carousel" data-role="carousel" data-auto="false" style="height: 80%" data-controls="false" id="@($"caro{res.Uri}")">
+                        <div class="slide" onclick="PropertiesClick(event, @res.ProcessRecord.Uri)" style="overflow: auto; padding-left: 5px;">
+                            @Html.Raw(res.DisplayPropertiesShort)
+                        </div>
+                       
+
+                            @if (!string.IsNullOrEmpty(res.DisplayNotesShort)) {
+                        <div class="slide" id="@($"{res.Uri}Notes")" style="padding-left: 5px;">
+                             
+                            @Html.Raw($"{(res.DisplayNotesShort.Length > 35 ? res.DisplayNotesShort.Substring(0, 35) + $"..." : res.DisplayNotesShort)}")
+                            <div style="border-style: none; margin-top: 10px; text-align: center; width: 100%">
+                                <button class="cycle-button bg-cyan bg-active-darkBlue fg-white" style="height: 48px; width: 48px;" onclick="NotesClick(event, @res.ProcessRecord.Uri, @res.Uri) " data-role="hint" data-hint="Notes">
+                                    <span class="mif-file-text"></span>
+                                </button>
+                            </div>
+                        </div>
+                            } else {
+                                <div class="slide"  id="@($"{res.Uri}Notes")" style="padding-left: 5px;">
+                                    No Notes
+                                    <div style="border-style: none; margin-top: 10px; text-align: center; width: 100%">
+                                        <button class="cycle-button bg-cyan bg-active-darkBlue fg-white" style="height: 48px; width: 48px;" onclick="NotesClick(event, @res.ProcessRecord.Uri, @res.Uri) " data-role="hint" data-hint="Notes">
+                                            <span class="mif-file-text"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        
+                        <div class="slide" id="@($"{res.Uri}Process")" style="padding-left: 5px;">
+                            @if (res.Location.Name == appUserState.Name && res.Status == InforStatus.Current)
+                            {
+                                @Html.Raw($"{(res.DisplayProcessShort.Length > 35 ? res.DisplayProcessShort.Substring(0, 35) + $"...": res.DisplayProcessShort)}")
+                            }
+                            <div style="border-style: none; margin-top: 10px; text-align: center; width: 100%">
+                                @if (res.Location.Name == appUserState.Name && res.Status == InforStatus.Current)
+                                {
+                                    <button class="cycle-button bg-cyan bg-active-darkBlue fg-white" style="height: 48px; width: 48px;" onclick="CompleteStepClicked(event, @res.Uri, @res.Uri);" id=@($"btnCompleteProcess{res.Uri}") data-role="hint"   data-hint="Complete">
+                                        <span class="mif-checkmark"></span>
+                                       
+                                    </button>
+                                }
+                                <button class="cycle-button bg-cyan bg-active-darkBlue fg-white" style="height: 48px; width: 48px;" onclick="ProcessClick(event, @res.Uri) " id=@($"btnShowProcess{res.Uri}") data-role="hint"   data-hint="Process">
+                                    <span class="mif-tree"></span>
+                                    
+                                </button>
+                            </div>
+                        </div>
+                        @*@if (res.IsElectronic)
+                    {
+                        <div class="slide" id="@(string.Format("{0}DocFunctions", res.Uri))" style="padding-left: 5px;">
+                            @if ((res.CheckedOutStatus == InforCheckedOutStatus.CheckedOutOther) || (res.CheckedOutStatus == InforCheckedOutStatus.CheckedOutSelf))
+                            {
+                                <span>@res.CheckedOutTo</span>
+                                <br/>
+                            }
+                            else
+                            {
+                                <br/>
+                            }
+                            <div style="margin-left: 25%;">
+                                @if (res.CanView && (res.CheckedOutStatus != InforCheckedOutStatus.CheckedOutSelf))
+                                {
+                                    <div class="tile-small">
+                                        <div class="tile-content iconic bg-blue fg-yellow">
+                                            <span class="icon mif-search" OnClick="ViewClick(event, @res.Uri, false)"></span>
+                                        </div>
+                                    </div>
+                                }
+                                @if (res.CanEdit)
+                                {
+                                    <div class="tile-small">
+                                        <div class="tile-content iconic bg-emerald fg-orange">
+                                            <span class="icon mif-pencil" OnClick="EditClick(event, @res.Uri, false)"></span>
+                                        </div>
+                                    </div>
+                                }
+                                @if (res.CheckedOutStatus == InforCheckedOutStatus.CheckedOutSelf)
+                                {
+                                    <div class="tile-small">
+                                        <div class="tile-content iconic bg-cobalt fg-lightGreen">
+                                            <span class="icon mif-upload" OnClick="CheckinClick(@res.Uri, false)"></span>
+                                        </div>
+                                    </div>
+                                    <div class="tile-small">
+                                        <div class="tile-content iconic bg-emerald fg-orange">
+                                            <span class="icon mif-pencil" OnClick="EditClick(event, @res.Uri, false)"></span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }*@
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}

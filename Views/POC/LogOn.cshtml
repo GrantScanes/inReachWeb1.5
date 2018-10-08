@@ -1,0 +1,80 @@
+﻿@model  inReachWebRebuild.Models.AccountViewModel
+@{
+    Layout = "~/views/shared/_layout.cshtml";
+}
+
+  
+    
+
+<h2>Log On</h2>
+<p>
+    Please log in using a username and password.
+</p>
+@Html.Raw(this.Model.ErrorDisplay.Show(400, true))
+
+@using (Html.BeginForm())
+{
+    <div>
+        <fieldset>
+            <div class="containercontent">
+
+                <p>
+                    <label for="username">User Name:</label>
+                    @Html.TextBox("username")
+                    @Html.ValidationMessage("username")
+                </p>
+                <div id="divPassword">
+                    <label for="password">Password:</label>
+                    @Html.Password("password")
+                    @Html.ValidationMessage("password")
+                </div>
+                <p>
+                    <label for="wgs">Workgroup Server:</label>
+                    @Html.TextBox("wgs")
+                    @Html.ValidationMessage("wgs")
+                </p>
+                <p>
+                    <label for="ds">Data Set:</label>
+                    @Html.TextBox("ds")
+                    @Html.ValidationMessage("ds")
+                </p>
+                <div id="divRememberMe" style="padding-left: 120px;">
+                    @Html.CheckBox("rememberMe", true) <label for="rememberMe" style="float: none;">Remember me?</label>
+                </div>
+
+                <div style="margin: 5px;">
+                    <input type="submit" id="btnLogOn" value="Log On" />
+                </div>
+
+                <hr />
+              
+            </div>
+        </fieldset>
+    </div>
+}
+
+
+<style type="text/css">
+    label {
+        float: left;
+        width: 120px;
+        font-weight: bold;
+    }
+
+    input[type=text], input[type=password] {
+        width: 250px;
+    }
+
+    #divOpenIdIcons {
+        margin-top: 5px;
+        margin-left: 30px;
+    }
+
+        #divOpenIdIcons img {
+            cursor: pointer;
+            border: solid 1px silver;
+        }
+</style>
+
+
+

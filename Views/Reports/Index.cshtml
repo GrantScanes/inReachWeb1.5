@@ -1,0 +1,646 @@
+﻿@using inReachWebRebuild.Models
+@model inReachWebRebuild.ViewModels.ReportConfigViewModel
+
+@{
+    var appUserState = (AppUserState) ViewData["UserState"];
+}
+<input type="hidden" id="runas" value="0">
+<div data-role="preloader" data-type="cycle" data-style="color" id="ExportJobsPartialPL" style="display: none; height: 100%; width: 100%;"></div>
+<div id="ExportJobsPartial">
+</div>
+<div data-role="dialog" id="DeleteJobConfirmation" class="padding20 dialog" data-close-button="true" data-windows-style="true">
+    <div class="container">
+        <h1 id="DeleteConfirmationTitle"> </h1>
+        <p>
+            <button class="shortcut-button bg-emerald fg-lighterBlue" id="deleteJobButton">
+                <span class="icon mif-checkmark"></span>
+                <span class="title">Yes</span>
+            </button>
+            <button class="shortcut-button bg-red fg-emerald" onclick="metroDialog.close('#DeleteJobConfirmation');">
+                <span class="icon mif-cross"></span>
+                <span class="title">No</span>
+            </button>
+        </p>
+    </div>
+    <span class="dialog-close-button"></span>
+</div>
+<script type="text/javascript">
+    
+
+
+
+    
+    function AddField() {
+        var tree = $('#treeview').data('kendoTreeView');
+        var dataItem = tree.dataItem(tree.select());
+        var p = dataItem; //jQuery.parseJSON(dataItem);
+        var list = document.getElementById('addedProps');
+        var l = $("<div/>").addClass("list");
+        var s = $("<span/>").addClass("list-title").appendTo(l);
+        l.attr('data-prop', JSON.stringify(p));
+        s.html(p["FriendlyLabel"]);
+        l.appendTo(list);
+        l.kendoDraggable({
+            group: "AddedPropDrag",
+            dragend: AddedPropDragEnd,
+            hint: function(element) {
+                return element.clone();
+            }
+        });
+     
+    }
+    function RemoveField() {
+        $("#addedProps").find(".list.active").each(function(index, node) {
+            $(node).remove();
+        });
+    }
+    
+    function HideCharm(async) {
+        window.refresh = true;
+    }
+    function AddNewSchedule(event) {
+        window.refresh = false;
+        var refreshJob = function(data) {
+            //var job = jQuery.parseJSON(JSON.stringify(data));
+            var charm = document.getElementById("ReportConfigCharm");
+            showMetroCharm(charm);
+            var l, s;
+//            initDraggableProperties();
+            $("#SavedSearches").val(data["SavedSearchName"]);
+            $("#chkAppend").prop('checked', data["AppendExport"]);
+            $("#chkArchive").prop('checked', data["Archive"]);
+            $("#chkIncludeHeaders").prop('checked', data["IncludeHeader"]);
+            $("#txtDelimeter").val(data["Delimeter"]);
+            $("#txtName").val(data["Name"]);
+            $("#txtQualifier").val(data["TextQualifier"]);
+            $('#txtExportLocation').val(data["FileExportPath"]);
+            $('#txtFileName').val(data["Filename"]);
+            $('#txtArchiveExportLocation').val(data["ArchiveFilePath"]);
+            $('#txtFailureEmailAddresses').val(data["FailureEmailAddresses"]);
+            $('#txtSuccessEmailAddresses').val(data["SuccessEmailAddresses"]);
+            $("#chkIncludeExport").prop('checked', data["IncludeExportInEmail"]);
+            var list = document.getElementById('addedProps');
+            var panel = document.getElementById("addedProps");
+            while (panel.firstChild) {
+                panel.removeChild(panel.firstChild);
+            }
+            $.each(data["Fields"],
+                function(k, v) {
+                    l = $("<div/>").addClass("list").appendTo(list);
+                    s = $("<span/>").addClass("list-title").appendTo(l);
+                    l.attr('data-prop', JSON.stringify(v));
+                    s.html(v["FriendlyLabel"]);
+                    l.kendoDraggable({
+                        group: "AddedPropDrag",
+                        dragend: AddedPropDragEnd,
+                        hint: function(element) {
+                            return element.clone();
+                        }
+                    });
+                });
+            $.ajax({
+                url: '@Url.Action("GetScheduleConfig", "Reports")',
+                type: 'post',
+                cache: false,
+                async: true,
+                data: { uom: null, 'id': null },
+                success: function(result) {
+                    $("#LocationsPartialPL").show();
+                    var partial = document.getElementById("SchedulePartialView");
+                    partial.innerHTML = result;
+                    CreateRadControls();
+                    var templateContent = $("#LocationTemplate").html();
+                    var template = kendo.template(templateContent);
+                    $("#LocationsPartialPL").hide();
+                    $.ajax({
+                        url: '@Url.Action("_LocationPickerPartial", "Users")',
+                        type: 'POST',
+                        cache: false,
+                        async: false,
+                        data: { groupName: "Export Manager Users", userId: data["UserId"] },
+                        success: function(d) {
+                            var partial = document.getElementById("runaspartial");
+                            partial.innerHTML = d;
+                            $("#LocationsPartialPL").hide();
+                            $("#locations").kendoComboBox({
+                                filter: "contains",
+                                autoWidth: true,
+                                dataTextField: "Name",
+                                dataValueField: "UserId",
+                                template: template,
+                                placeholder: "Select...",
+                                dataSource: {
+                                    transport: {
+                                        read: {
+                                            dataType: "jsonp",
+                                            url: '@Url.Action("GetLocations", "Users")',
+                                            data: { groupName: "Export Manager Users", userId: data["UserId"] }
+                                        }
+                                    }
+                                },
+                                height: 400
+                            });
+                        }
+                    });
+                }
+            });
+            $('#SaveReport').off('click touchstart');
+            $('#PreviewReport').off('click touchstart');
+            $('#SaveReport').on('click touchstart', function() { SaveReport(JSON.stringify(data)); });
+            $('#PreviewReport').on('click touchstart', function() { PreviewReport(JSON.stringify(data)); });
+            //$("#ScheduleFrequency").val(data["Schedule"]["TimeUoMstring"]);
+        };
+        $.ajax({
+            type: 'post',
+            dataType: 'JSONP',
+            url: '@Url.Action("ExportJob", "Reports")',
+            data: { 'Id': null },
+            cache: false,
+            success: refreshJob
+        });
+        var charm = document.getElementById("ReportConfigCharm");
+        showMetroCharm(charm);
+    }
+    function CreateRadControls() {
+        $.each($(".time"),
+            function(index, item) {
+                var tp = $(item).kendoTimePicker({
+                    interval: 10
+                }).data("kendoTimePicker");;
+                tp.min("12:00 AM");
+                tp.max("12:00 AM");
+                $("#" + $(item).attr('id') + "_timeview").data('incharm', 'true');
+                $("#" + $(item).attr('id') + "-timeview").data('incharm', 'true');
+            });
+        $.each($(".numerictb"),
+            function(index, item) {
+                $(item).kendoNumericTextBox({ decimals: 0, format: "D" });
+                // $("#" + $(item).attr('id') + "_timeview").addClass('incharm');
+            });
+        $("#ScheduleFrequency").kendoDropDownList({});
+        $("#SavedSearches").kendoDropDownList({});
+        $.each($(".optionDD"),
+            function(index, item) {
+                options = $(item).data("options");
+                $(item).kendoDropDownList({
+                    dataSource: {
+                        data: options
+                    },
+                    dataTextField: "Text",
+                    dataValueField: "Value"
+                });
+                $("#" + $(item).attr('id') + "_listbox").data('incharm', 'true');
+                $("#" + $(item).attr('id') + "-list").data('incharm', 'true');
+            });
+    }
+    function clearfilterProperties(box) {
+        $("#propertiesFilter").val('');
+        var tree = $('#treeview').data('kendoTreeView');
+        tree.dataSource.filter({
+            field: "Caption",
+            operator: "contains",
+            value: ""
+        });
+    }
+    function filterProperties(box) {
+        var filter = box.value.toLowerCase();
+        
+        var tree = $('#treeview').data('kendoTreeView');
+        tree.dataSource.filter({
+            field: "Caption",
+            operator: "contains",
+            value: filter
+        });
+    }
+    function PreviewReport(job) {
+        var partial = document.getElementById("PreviewText");
+        partial.innerHTML = "";
+        $('#ExportManagerTabControl').data('tabcontrol').showTab('#Preview');
+        $("#PreviewSectionPL").show();
+        job = jQuery.parseJSON(job);
+        job.Fields = [];
+        var sslist = $("#SavedSearches").val();
+        var elms = $("#addedProps").find(".list");
+        $.each(elms,
+            function(k, v) {
+                var prop = jQuery.parseJSON(v.dataset.prop);
+                job.Fields.push(prop);
+            });
+        $.ajax({
+            contentType: 'application/json, charset=utf-8',
+            type: "POST",
+            url: '@Url.Action("PreviewExportJob", "Reports")',
+            data: JSON.stringify({ 'props': job.Fields, 'savedSearch': sslist, 'delimeter': $("#txtDelimeter").val(), 'qualifier': $("#txtQualifier").val(), 'includeHeaders': $('#chkIncludeHeaders').prop('checked') }),
+            cache: false,
+            success: function(result) {
+                partial.innerHTML = result.replace(/(?:\r\n|\r|\n)/g, '<br />');
+                $("#PreviewSectionPL").hide();
+            }
+        });
+    }
+    function putInDocumentOrder(a) {
+        var elements;
+        // Get elements in order and remember the index of
+        // the entry in `a`
+        elements = $().add(a.map(function(entry, index) {
+            entry.element.__index = index;
+            return entry.element;
+        }));
+        // Build array of entries in element order
+        a = elements.map(function() {
+            return a[this.__index];
+        }).get();
+        return a;
+    }
+    function SaveReport(job) {
+        var valid = $("#Export").data('validator').Validate();
+        if (!valid) {
+            $('#ExportManagerTabControl').data('tabcontrol').showTab('#Export');
+            return;
+        }
+        var scheduleprops = [];
+        $.each($(".DataProp"),
+            function(k, v) {
+                scheduleprops.push({ id: $(v).attr('id'), value: $(v).val() });
+            });
+        job = jQuery.parseJSON(job);
+        job.Fields = [];
+        $.each($("#addedProps").find(".list"),
+            function(k, v) {
+                var prop = jQuery.parseJSON(v.dataset.prop);
+                job.Fields.push(prop);
+            });
+        job.IncludeHeader = $('#chkIncludeHeaders').prop('checked');
+        job.SavedSearchName = $("#SavedSearches").val();
+        job.Archive = $('#chkArchive').prop('checked');
+        job.AppendExport = $('#chkAppend').prop('checked');
+        job.Delimeter = $('#txtDelimeter').val();
+        job.Name = $('#txtName').val();
+        job.TextQualifier = $('#txtQualifier').val();
+        job.FileExportPath = $('#txtExportLocation').val();
+        job.Filename = $('#txtFileName').val();
+        job.ArchiveFilePath = $('#txtArchiveExportLocation').val();
+        job.FailureEmailAddresses = $('#txtFailureEmailAddresses').val();
+        job.SuccessEmailAddresses = $('#txtSuccessEmailAddresses').val();
+        job.IncludeExportInEmail = $('#chkIncludeExport').prop('checked');
+        job.UserId = $('#locations').data('kendoComboBox').value();
+        var jsonprops = JSON.stringify(scheduleprops);
+        $.ajax({
+            contentType: 'application/json, charset=utf-8',
+            type: "POST",
+            url: '@Url.Action("CommitExportJob", "Reports")',
+            data: JSON.stringify({
+                'job': job,
+                'scheduleValues': jsonprops,
+                'scheduleFequency': $("#ScheduleFrequency").val(),
+                repeating: $('#chkRepeating').prop('checked'),
+                disabled: $('#chkDisabled').prop('checked')
+            }),
+            cache: false,
+            success: function(data) {
+                var charm = document.getElementById("ReportConfigCharm");
+                hideMetroCharm(charm);
+                loadExportJobs();
+            }
+        });
+        window.refresh = true;
+    }
+ 
+ 
+    function CancelExportJobExecution(event, Id) {
+        event.stopPropagation();
+        $.ajax({
+            type: "GET",
+            async: true,
+            data: { id: Id },
+            url: '@Url.Action("CancelExecution", "Reports")',
+            success: function() {
+                loadExportJobs();
+            }
+        });
+    }
+    function DeleteExportJob(event, Id) {
+        event.stopPropagation();
+        $.ajax({
+            type: "GET",
+            async: true,
+            data: { id: Id },
+            url: '@Url.Action("DeleteExportJob", "Reports")',
+            success: function() {
+                metroDialog.close('#DeleteJobConfirmation');
+                loadExportJobs();
+            }
+        });
+    }
+    function CloneExportJob(event, Id) {
+        event.stopPropagation();
+        $.ajax({
+            type: "GET",
+            async: true,
+            data: { id: Id },
+            url: '@Url.Action("CloneExportJob", "Reports")',
+            success: function() {
+                loadExportJobs();
+            }
+        });
+    }
+    function ExecuteExportJob(event, name) {
+        event.stopPropagation();
+        $.ajax({
+            type: "GET",
+            async: true,
+            data: { name: name },
+            url: '@Url.Action("ExecuteExportJob", "Reports")',
+            success: function() {
+                loadExportJobs();
+            }
+        });
+    }
+    function loadExportJobs(name) {
+        $("#ExportJobsPartialPL").show();
+        $.ajax({
+            url: '@Url.Action("ExportJobs", "Reports")',
+            type: 'post',
+            cache: false,
+            async: true,
+            data: { name: name },
+            success: function(result) {
+                var partial = document.getElementById("ExportJobsPartial");
+                partial.innerHTML = result;
+                $("#ExportJobsPartialPL").hide();
+                $.each($(".tile-wide"),
+                    function(ind, item) {
+                        var id = $(item).data("jobid");
+                        $("#ctxmnu" + id).kendoContextMenu({
+                            target: "#jobTile" + id,
+                            alignToAnchor: false,
+                            close: function(e) {
+                                window.refresh = true;
+                            },
+                            open: function(e) {
+                                window.refresh = false;
+                            }
+                        });
+                    });
+            }
+        });
+    }
+    $("#RemovePropertyDropArea")
+        .kendoDropTarget({
+            group: "AddedPropDrag",
+            drop: RemovePropDragEnd
+        });
+    function RemovePropDragEnd(e) {
+        e.draggable.destroy();
+        e.draggable.element.remove();
+    }
+    (function($) {
+        $.fn.physicallyClosest = function() {
+            var $this = this,
+                selector = "body *",
+                options;
+            if (typeof arguments[0] === "string") {
+                selector = arguments[0];
+            } else if (typeof arguments[0] === "object") {
+                options = arguments[0];
+            }
+            if (typeof arguments[1] === "object") {
+                options = arguments[1];
+            }
+            var settings = {
+                'excludeChildren': false,
+                'excludeDescendants': false,
+                'reverse': false
+            };
+            if (options) {
+                $.extend(settings, options);
+            }
+            var selectedY = this.offset().top + (this.height() / 2),
+                selectedX = this.offset().left + (this.width() / 2),
+                closestFound;
+            $(selector).each(function() {
+                if (settings.excludeChildren) {
+                    if ($(this).parent().get(0) == $this.get(0)) {
+                        return 1;
+                    }
+                }
+                if (settings.excludeDescendants) {
+                    var isDescendant = false;
+                    $(this).parents().each(function() {
+                        if ($(this).get(0) == $this.get(0)) {
+                            isDescendant = true;
+                            return false; //Break
+                        }
+                    });
+                    if (isDescendant) {
+                        return 1; //Continue
+                    }
+                }
+                var currentY = $(this).offset().top + ($(this).height() / 2),
+                    currentX = $(this).offset().left + ($(this).width() / 2),
+                    yDiff = currentY - selectedY,
+                    xDiff = currentX - selectedX,
+                    c = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
+                if (closestFound) {
+                    if (!settings.reverse && c != 0 && c < closestFound.distance) {
+                        closestFound = { element: this, distance: c };
+                    } else if (settings.reverse && c != 0 && c > closestFound.distance) {
+                        closestFound = { element: this, distance: c };
+                    }
+                } else {
+                    closestFound = { element: this, distance: c };
+                }
+            });
+            if (closestFound === undefined) {
+                return false;
+            }
+            return $(closestFound.element);
+        };
+    })(jQuery);
+  
+    $(document)
+        .ready(function() {
+            window.refresh = true;
+     
+            loadExportJobs();
+            function refreshPartial() {
+                //this will wait 3 seconds and then fire the load partial function
+                setTimeout(function() {
+                        if (window.refresh) {
+                            loadExportJobs();
+                        }
+                        //recall this function so that it will continue to loop
+                        refreshPartial();
+                    },
+                    15000);
+            }
+            //initialize the loop
+            refreshPartial();
+        });
+    function quoteAndEscape(str) {
+        return '' +
+            '&#39;' // open quote '
+            +
+            ('' + str) // force string
+            .replace(/\\/g, '\\\\') // double \
+            .replace(/"/g, '\\&quot;') // encode "
+            .replace(/'/g, '\\&#39;') // encode '
+            +
+            '&#39;'; // close quote '
+    }
+    function GetView(name, id) {
+        $("#SchedulePartialViewPL").show();
+        $.ajax({
+            url: '@Url.Action("GetScheduleConfig", "Reports")',
+            type: 'post',
+            cache: false,
+            async: true,
+            data: { uom: name, 'id': id },
+            success: function(result) {
+                var partial = document.getElementById("SchedulePartialView");
+                partial.innerHTML = result;
+                $("#SchedulePartialViewPL").hide();
+                CreateRadControls();
+            }
+        });
+    }
+    function ShowReportConfigCharm(event, id) {
+        refresh = false;
+        var refreshJob = function(data) {
+            
+            var charm = document.getElementById("ReportConfigCharm");
+            showMetroCharm(charm);
+            var partial = document.getElementById("runaspartial");
+            partial.innerHTML = "";
+            var l, s;
+           
+            $("#SavedSearches").val(data["SavedSearchName"]);
+            $("#chkAppend").prop('checked', data["AppendExport"]);
+            $("#chkArchive").prop('checked', data["Archive"]);
+            $("#chkIncludeHeaders").prop('checked', data["IncludeHeader"]);
+            $("#txtDelimeter").val(data["Delimeter"]);
+            $("#txtName").val(data["Name"]);
+            $("#txtQualifier").val(data["TextQualifier"]);
+            $('#txtExportLocation').val(data["FileExportPath"]);
+            $('#txtFileName').val(data["Filename"]);
+            $('#txtArchiveExportLocation').val(data["ArchiveFilePath"]);
+            $('#txtFailureEmailAddresses').val(data["FailureEmailAddresses"]);
+            $('#txtSuccessEmailAddresses').val(data["SuccessEmailAddresses"]);
+            $("#chkIncludeExport").prop('checked', data["IncludeExportInEmail"]);
+          
+            $("#LocationsPartialPL").show();
+            $.ajax({
+                url: '@Url.Action("_LocationPickerPartial", "Users")',
+                type: 'POST',
+                cache: false,
+                async: true,
+                data: { groupName: "Export Manager Users", userId: data["UserId"] },
+                success: function(d) {
+                    var partial = document.getElementById("runaspartial");
+                    partial.innerHTML = d;
+                    $("#LocationsPartialPL").hide();
+                    var templateContent = $("#LocationTemplate").html();
+                    var template = kendo.template(templateContent);
+                    $("#locations").kendoComboBox({
+                        filter: "contains",
+                        autoWidth: true,
+                        dataTextField: "Name",
+                        dataValueField: "UserId",
+                        template: template,
+                        placeholder: "Select...",
+                        dataSource: {
+                            transport: {
+                                read: {
+                                    dataType: "jsonp",
+                                    url: '@Url.Action("GetLocations", "Users")',
+                                    data: { groupName: "Export Manager Users", userId: data["UserId"] }
+                                }
+                            }
+                        },
+                        height: 400
+                    });
+                    var combobox = $("#locations").data("kendoComboBox");
+                    combobox.value(data["UserId"]);
+                   
+                }
+            });
+            var list = document.getElementById('addedProps');
+            var panel = document.getElementById("addedProps");
+            while (panel.firstChild) {
+                panel.removeChild(panel.firstChild);
+            }
+            $.each(data["Fields"],
+                function(k, v) {
+                    l = $("<div/>").addClass("list").appendTo(list);
+                    s = $("<span/>").addClass("list-title").appendTo(l);
+                    l.attr('data-prop', JSON.stringify(v));
+                    s.html(v["FriendlyLabel"]);
+                     
+                    l.kendoDraggable({
+                        group: "AddedPropDrag",
+                        dragend: AddedPropDragEnd,
+                        hint: function(element) {
+                            return element.clone();
+                        }
+                    });
+                });
+            $.ajax({
+                url: '@Url.Action("GetScheduleConfig", "Reports")',
+                type: 'post',
+                cache: false,
+                async: true,
+                data: { id: data["Id"] },
+                success: function(result) {
+                    var partial = document.getElementById("SchedulePartialView");
+                    partial.innerHTML = result;
+                    CreateRadControls();
+                }
+            });
+            $.ajax({
+                url: '@Url.Action("GetHistoryPartialViewResult", "Reports")',
+                type: 'post',
+                cache: false,
+                async: true,
+                data: { id: data["Id"] },
+                success: function(result) {
+                    var partial = document.getElementById("HistoryPartialView");
+                    partial.innerHTML = result;
+                }
+            });
+            $('#SaveReport').off('click touchstart');
+            $('#PreviewReport').off('click touchstart');
+            $('#SaveReport').on('click touchstart', function() { SaveReport(JSON.stringify(data)); });
+            $('#PreviewReport').on('click touchstart', function() { PreviewReport(JSON.stringify(data)); });
+            $("#ScheduleFrequency").val(data["Type"]);
+        };
+        $.ajax({
+            type: 'post',
+            dataType: 'JSONP',
+            url: '@Url.Action("ExportJob", "Reports")',
+            data: { 'id': id },
+            cache: false,
+            success: refreshJob
+        });
+    }
+    function DownloadexportFile(path) {
+        var pathAndQuery = "?path=" + path;
+        var url = 'Reports/DownloadView' + pathAndQuery;
+        window.location = url;
+    }
+</script>
+<style type="text/css">
+    .leaf { color: white !important }
+
+    .body { font-size: 12px }
+
+    .listview.list-type-tiles .list {
+        margin: 0;
+        padding-left: 5px;
+    }
+
+    .content {
+        padding-bottom: 5px;
+        padding-left: 5px;
+        padding-top: 5px;
+    }
+</style>

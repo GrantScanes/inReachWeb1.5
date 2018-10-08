@@ -1,0 +1,14 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@using System.Web.Script.Serialization
+@model inReachWebRebuild.ViewModels.SettingsViewModel
+@{
+    var serializer = new JavaScriptSerializer();
+}
+
+@foreach (var setting in Model.Settings)
+{
+    @Html.Raw(string.Format("{0}  -   {1}", setting.Title, setting.Value)) 
+    <br />
+}

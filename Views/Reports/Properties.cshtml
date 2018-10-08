@@ -1,0 +1,29 @@
+﻿@using System.Web.Script.Serialization
+@model inReachWebRebuild.ViewModels.InforPropsViewModel
+@{ var serializer = new JavaScriptSerializer(); }
+<ul>
+    @if (Model.Properties.Any())
+    {
+        foreach (var p in Model.Properties)
+        {
+            <li class="node collapsed" data-Prop="@serializer.Serialize(p)"  style="touch-action: none">
+                <span class="leaf" style="touch-action: none" id="@Html.Raw($"Property{p.Id}")" >@p.Caption</span>
+                @if (Model.IncludeAddButton)
+                {
+                    <span class="mif-arrow-right" style="touch-action: none"  id="@Html.Raw($"AddProperty{p.Id}")" onclick="AddProperty('@serializer.Serialize(p)')"></span>
+                }
+                @if (p.HasChildren)
+                {
+                    <span class="node-toggle" style="touch-action: none"></span>
+                    <ul></ul>
+                }
+
+            </li>
+        }
+    }
+</ul>
+
+
+
+<script type="text/javascript">
+</script>

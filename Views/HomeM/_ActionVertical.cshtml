@@ -1,0 +1,50 @@
+﻿@using inReachWebRebuild.ViewModels
+@using Infor.Model.Enums
+@model inReachWebRebuild.ViewModels.ActionViewModel
+@{
+    var bg = "bg-emerald fg-white";
+    var width = "150px";
+    switch (Model.Action.Status)
+    {
+        case InforActionStatus.Current:
+            bg = "bg-emerald  fg-white";
+            break;
+        case InforActionStatus.Completed:
+            bg = "bg-darkIndigo  fg-white";
+            break;
+        case InforActionStatus.Pending:
+            bg = "bg-amber  fg-grayDarker";
+            break;
+        default:
+            throw new ArgumentOutOfRangeException();
+    }
+}
+<li class="node">
+    @if (Model.Action.Children.Any())
+    {
+        <span class="node-toggle"></span>
+    }
+    <span class="leaf">
+        <div class="@string.Format("tile-small {0}", bg)" style="width: @width">
+            <div class="tile-content">
+                <b>@Model.Action.Name</b>
+                <br />
+                @Model.Action.DueDate
+                <br />
+                @Model.Action.AssignedTo.Name
+            </div>
+        </div>
+    </span>
+        @if (Model.Action.Children.Any())
+        {
+
+            <ul style="padding-left: 30px;">
+                @foreach (var action in Model.Action.Children)
+                {
+                    @Html.Partial("_ActionVertical", new ActionViewModel {Action = action})
+                }
+            </ul>
+        }
+
+
+</li>

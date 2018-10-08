@@ -1,0 +1,44 @@
+﻿@using System.Web.Script.Serialization
+@model inReachWebRebuild.ViewModels.HomePageViewModel
+@{ var serializer = new JavaScriptSerializer(); }
+<div class="tile-container bg-black" id="quickTiles">
+    @if (Model.PinnedTiles.UserTiles.Any())
+    {
+
+        foreach (var tile in Model.PinnedTiles.UserTiles)
+        {
+            if (tile.Search != null)
+            {
+                    <div class="tile-small" onclick="TileClicked(event,'@tile.Title', '@serializer.Serialize(tile.Search)', '@tile.Title');" id="@($"quicktile{tile.Title.Replace(" ", "_")}")" data-title="@tile.Title" data-css="@tile.Search.Css" data-background="@tile.Search.Background">
+                        <div class="@tile.Search.TileCss">
+                            @if (tile.AppTitle == "inLighten")
+                            {
+                                <span class="tile-label" style="font-size: 10px; padding: 0px; color: black; margin-top: 50px; line-height: 10px;">@tile.Title</span>
+                            }
+                            <span class="@tile.Search.Css"></span>
+                           
+                            <span class="mif-not fg-dark" onclick="removePinUserTile(event, '@tile.Title.Replace(" ", "_")');" style="margin-bottom: 38px;margin-left: 2px; font-size: 8px; font-weight:bold"></span>
+                        </div>
+                    </div>
+
+                }
+                else
+                {
+                    <div class="tile-small" onclick="TileClicked(event, '@tile.Title', '@serializer.Serialize(tile.Search)', '@tile.Title');" id="@($"quicktile{tile.Title.Replace(" ", "_")}")" data-title="@tile.Title" data-css="@tile.Search.Css" data-background="@tile.Search.Background">
+                        <div class="@tile.Search.TileCss">
+                            @if (tile.AppTitle == "inLighten")
+                            {
+                                <span class="tile-label" style="font-size: 10px; padding: 0px; color: black; margin-top: 50px; line-height: 10px;">@tile.Title</span>
+                            }
+                            <span class="@tile.Search.Css"></span>
+                            
+                            <span class="mif-not fg-dark" onclick="removePinUserTile(event, '@tile.Title.Replace(" ", "_")');" style="margin-bottom: 38px;margin-left: 2px; font-size: 8px; font-weight:bold"></span>
+                        </div>
+                    </div>
+                }
+            }
+
+    }
+
+
+</div>

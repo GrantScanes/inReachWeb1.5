@@ -1,0 +1,15 @@
+﻿@model inReachWebRebuild.ViewModels.ActionsViewModel
+@{
+    var serializer = new System.Web.Script.Serialization.JavaScriptSerializer { MaxJsonLength = int.MaxValue };
+    var jsonModel = serializer.Serialize(Model);
+}
+<span id="lblActionsTitle" style="font-size: medium; font-weight: bold;"> @($"Actions for {Model.RecordNumber} - {Model.Title}")</span>
+
+
+<div style="border-style: none; margin-top: 20px; width: 100%" id="ModelContainer" data-model="@jsonModel"></div>
+
+
+<div id="actionsChart" style="height: 50%; width: 98%;overflow:hidden" >
+</div>
+<div data-role="preloader" data-type="cycle" data-style="color" id="ActionActionsPL" style="display: none; height: 50%; width: 100%;"></div>
+<div id="ActionsActionsPartial" style="height: 50%;"></div>

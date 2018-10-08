@@ -1,0 +1,49 @@
+﻿@model inReachWebRebuild.ViewModels.NotesViewModel
+
+<span id="lblNotesTitle" style="font-size: medium; font-weight: bold;"> @($"Notes for {Model.RecordNumber} - {Model.Title}")</span>
+
+<div style="float: right; margin-bottom: 3px;"> 
+@if (!Model.ReadOnly) {
+    if (Model.ProcessUri > 0) {
+         <button class="cycle-button bg-cyan fg-white bg-active-darkBlue"  id="btnSaveNotesProcess" onclick="AddNotesProcessClick(@Model.RecordUri, @Model.ProcessUri)" data-role="hint"   data-hint="Save">
+             <span class="mif-floppy-disk"></span>
+
+         </button>
+
+     } else {
+         <button class="cycle-button bg-cyan fg-white bg-active-darkBlue"  id="btnSaveNotesRecords" onclick="AddNotesClick(@Model.RecordUri)"   data-role="hint"   data-hint="Save">
+             <span class="mif-floppy-disk"></span>
+
+         </button>
+
+
+     }
+}
+</div>
+
+<div >
+    
+    @if (!Model.ReadOnly)
+{
+   
+        <div class="input-control textarea " style="width: 95%">
+            <textarea id="notesTextArea" placeholder="Enter Notes:"  ></textarea>
+        </div>
+  
+    
+    
+
+}
+</div>
+<div id="divNotes" style="height: 100%;  overflow: auto; margin-top: 10px; word-break:break-all; word-wrap: break-word;" class="fg-white" >
+    @Html.Raw(Model.Notes)
+</div>
+@*<div class="tile-small bg-cyan fg-white" data-role="tile" style="margin-left: 0px">
+    <div class="tile-content iconic">
+        <span class="icon mif-floppy-disk" id="addNotesButton" ></span>
+    </div>
+</div>*@
+
+<script type="text/javascript">
+    
+</script>

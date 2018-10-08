@@ -1,0 +1,19 @@
+@model inReachWebRebuild.ViewModels.ProcessViewModel
+@{
+    var serializer = new System.Web.Script.Serialization.JavaScriptSerializer {MaxJsonLength = int.MaxValue};
+    var jsonModel = serializer.Serialize(Model);
+}
+
+<span id="lblActionsTitle" style="font-size: medium; font-weight: bold;"> @($"Process for {Model.RecordNumber} - {Model.Title}")</span>
+<div style="color: white; display: @(Model.ErrorDisplay.HasMessage ? "block" : "none"); padding-top: 80px;">
+    @Html.Raw(Model.ErrorDisplay.Show(400, false))
+</div>
+
+
+<div id="ProcessChart" style="height: 50%; width: 98%;overflow:hidden"   data-model="@jsonModel">
+</div>
+<div data-role="preloader" data-type="cycle" data-style="color" id="ProcessActionsPL" style="display: none; height: 50%; width: 100%;"></div>
+<div id="ProcessActionsPartial" style="height: 50%;"></div>
+
+@*<div class="bg-grayDark" id="Block" style="bottom: 15px !important; display: block !important; font-size: 12px !important; height: auto !important; margin: 0 !important; opacity: 1 !important; padding: 0 !important; position: absolute !important; right: 15px !important; visibility: visible !important; width: auto !important; z-index: 30000; z-index: 2147483648 !important; zoom: 1;">
+</div>*@

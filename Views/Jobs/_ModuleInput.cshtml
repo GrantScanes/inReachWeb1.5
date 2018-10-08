@@ -1,0 +1,82 @@
+﻿@using System.Web.Script.Serialization
+@using inReachWebRebuild.ViewModels
+@model inReachWebRebuild.ViewModels.ModuleToolViewModel
+@{ var serializer = new JavaScriptSerializer {MaxJsonLength = int.MaxValue}; }
+@{
+    var mod = Model.Module;
+    var jsonModule = serializer.Serialize(Model.Module);
+    var types = new List<string>();
+    var typesDic = new List<Tuple<string, string, string>>();
+}
+<div style="color: white;">
+    @Html.Raw(Model.ErrorDisplay.Show(400, false))
+</div>
+<div style="float: right; margin-bottom: 3px;">
+    <button class="cycle-button bg-cyan fg-white bg-active-darkBlue" onclick="ValidateModule()">
+        <span class="mif-clipboard"></span>
+    </button>
+</div>
+<div style="margin-bottom: 25px;"></div>
+@{
+    foreach (var inputType in Model.Module.ExpectedInputTypes) {
+        if (!types.Contains(inputType)) {
+            types.Add(inputType);
+            typesDic.AddRange(Model.ExistingComplimentaryModules.Where(t => t.ExpectedReturnType == inputType).Select(moduleType => Tuple.Create(inputType, $"{moduleType.FriendlyString}", moduleType.Id.ToString())));
+            typesDic.AddRange(Model.NewComplimentaryModules.Where(t => t.ExpectedReturnType == inputType).Select(moduleType => Tuple.Create(inputType, $"New-{moduleType.Title}", $"-1_{moduleType.Type}")));
+        }
+    }
+    var groups = typesDic.GroupBy(k => k.Item1);
+    foreach (var group in groups) {
+        var options = typesDic.Where(k => k.Item1 == group.Key);
+        <span class=" caption">@group.Key</span>
+        <div class="input-control select">
+            <select id="@group.Key" class="DataProp kcombo">
+                @foreach (var option in options) {
+                    if (option.Item3.Substring(0, 3) == "-1_") {
+                        <option value="@option.Item3">@option.Item2</option>
+                    } else {
+                        <option value="@option.Item3" @(Model.Module.ParentIds.Contains(new Guid(option.Item3)) ? "selected" : "")>@option.Item2</option>
+                    }
+                }
+            </select>
+        </div>
+    }
+}
+<div style="display: none" id="ModuleContainer" data-module="@jsonModule"></div>
+@Html.Partial("_ModuleProperties", new ModulePropertiesViewModel {Module = Model.Module})
+<div class="flex-grid bg-grayDark" style="width: 100%">
+    <div class="tabcontrol" data-role="tabcontrol" id="@($"{mod.Key}ModuleTabs")">
+        <ul class="tabs">
+            @{
+                var pageModules = Model.Module.Modules.Where(t => !string.IsNullOrEmpty(t.PageTab)).GroupBy(setting => setting.PageTab).Select(group => group.First());
+                foreach (var chmod in pageModules) {
+                    <li>
+                        <a href="#@($"{mod.Key}_{chmod.PageTab.Replace(" ", "_")}_ModuleTab")">@chmod.PageTab</a>
+                    </li>
+                }
+            }
+        </ul>
+        <div class="frames bg-grayDark fg-white">
+            @foreach (var chmod in pageModules) {
+                <div class="frame   bg-grayDark fg-white " id="@($"{mod.Key}_{chmod.PageTab.Replace(" ", "_")}_ModuleTab")">
+                    @{
+                        var distinctModulesfortab = Model.Module.Modules.Where(pt => pt.PageTab == chmod.PageTab);
+                        foreach (var distinctTab in distinctModulesfortab) {
+                            @Html.Partial("_ModuleProperties", new ModulePropertiesViewModel {Module = distinctTab})
+                        }
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+<div id="ValidationPartialView"></div>
+<style>
+    .tabcontrol > .tabs li a { color: #2086bf !important }
+
+    .tabcontrol > .tabs li.active a {
+        background-color: #1ba1e2;
+        color: #ffffff !important;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+    }
+</style>

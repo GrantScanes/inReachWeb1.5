@@ -1,0 +1,34 @@
+﻿@model inReachWebRebuild.ViewModels.ActionViewModel
+
+<div style="display: none;  width: 100%" id="ProcessModelContainer" data-model="@Json.Encode(Model)"></div>
+
+<div style="float: right; margin-bottom: 3px;">
+
+    @if (Model.Action.CanComplete)
+    {
+        <button class="cycle-button bg-cyan bg-active-darkBlue fg-white"   id="completeActionButton" onclick="CompleteActionClick(@Model.RecordUri, @Model.Action.Uri)"  data-role="hint"   data-hint="Complete">
+            <span class="mif-event-available"></span>
+
+        </button>
+    }
+@if (Model.Action.CanAdd) {
+    <button class="cycle-button bg-cyan bg-active-darkBlue fg-white" onclick="AddActionClick(@Model.RecordUri)" id="BtnAddAction" data-role="hint" data-hint="Add">
+        <span class="mif-plus"></span>
+
+    </button>
+}
+    @if (Model.Action.CanReassign)
+    {
+        <button class="cycle-button bg-cyan bg-active-darkBlue fg-white" onclick="ReasignActionClick(@Model.Action.Uri, @Model.RecordUri, @Model.Action.AssignedTo.UserId, '@Model.Action.Name')"   id="BtnReassignAction" data-role="hint"   data-hint="Reassign">
+            <span class="mif-users"></span>
+        </button>
+    }
+</div>
+ @if (Model.Action.CanComplete) {
+        <div >
+            <div class="input-control textarea required" style="width: 100%">
+                <textarea id="CompleteActionTextArea" placeholder="Mandatory Notes:"  ></textarea>
+            </div>
+        </div>
+    }
+

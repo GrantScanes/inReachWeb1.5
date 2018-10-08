@@ -1,0 +1,31 @@
+﻿@using System.Web.Script.Serialization
+@model inReachWebRebuild.ViewModels.InforPropsViewModel
+@{ var serializer = new JavaScriptSerializer(); }
+ 
+    
+
+        @if (Model.Properties.Any())
+        {
+            foreach (var p in Model.Properties)
+            {
+                if (!p.HasChildren)
+                {
+                    <div class="list" data-Prop="@serializer.Serialize(p)" data-noswipe="true">
+                        <span class="list-title">@p.Caption</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group  collapsed" data-Prop="@serializer.Serialize(p)" data-noswipe="true">
+                        <span class="list-group-toggle">@p.Caption</span>
+                        <div class="list-group-content">
+                         
+                        </div>
+                    </div>
+                }
+            }
+        }
+ 
+<script type="text/javascript">
+   
+</script>

@@ -1,0 +1,76 @@
+﻿@using System.Web.Script.Serialization
+@model inReachWebRebuild.ViewModels.HomePageViewModel
+@{ var serializer = new JavaScriptSerializer(); }
+<div class="tile-container" id="Tiles">
+
+    @if (Model.PinnedTiles.UserTiles.Any())
+    {
+        foreach (var tile in Model.PinnedTiles.UserTiles)
+        {
+            if (tile.Search != null)
+            {
+                <div class="tile" style="left: @($"{tile.Left}px"); position: @(tile.Left > 0 ? "absolute" : "relative"); top: @($"{tile.Top}px");" 
+                     onclick="TileClicked(event, '@tile.Title', '@serializer.Serialize(tile.Search)', '@tile.AppTitle');" 
+                     data-tile="@serializer.Serialize(tile)" id="@tile.Title.Replace(" ", "_")" 
+                     data-title="@tile.Title" data-css="@tile.Search.Css" data-background="@tile.Search.Background" data-role="tile"  >
+                    <div class="@tile.Search.TileCss">
+                        @*<div class="live-slide">*@
+                        @if (tile.AppTitle == "Reporting")
+                        {
+                            <span class="tile-label">@tile.Title</span>
+                        }
+                        <span class="@tile.Search.Css"></span>
+                        @if (tile.Search.IncludeCount)
+                        {
+                            <span class="tile-badge  fg-white" style="font-size: 20px;font-weight: bold">@tile.Count</span>
+                        }
+                        <span class="mif-not" onclick="removePinUserTile(event, '@tile.Title');" style="padding-left: 3px;"></span>
+                        @*</div>
+                        <div class="live-slide">
+                            <div id="@string.Format("gauge{0}", tile.Title.Replace(" ", "_"))" style="height: 150px; width: 150px"></div>
+                        </div>
+                        <div class="live-slide">
+                            <div  id="@string.Format("chart{0}", tile.Title.Replace(" ", "_"))" style="height: 150px; width: 150px"></div>
+                        </div>*@
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="tile" onclick="TileClicked(event, '@tile.Title', '@serializer.Serialize(tile.Search)', '@tile.AppTitle');" 
+                     data-tile="@serializer.Serialize(tile)"  
+                     id="@tile.Title.Replace(" ", "_")" 
+                     data-title="@tile.Title" 
+                     data-img="@Url.Content(tile.IconUrl)" data-css="@tile.Search.Css" data-background="@tile.Search.Background" data-role="tile"  >
+                   
+                       
+                    <div class="@tile.Search.TileCss">
+                        @*<div class="live-slide">*@
+                        @if (tile.AppTitle == "inLighten")
+                        {
+                            <span class="tile-label">@tile.Title</span>
+                        }
+                        <span class="@tile.Search.Css"></span>
+                        @if (tile.Search.IncludeCount)
+                        {
+                            <span class="tile-badge fg-white" style="font-size: 20px;font-weight: bold">@tile.Count</span>
+                        }
+                        <span class="mif-not" onclick="removePinUserTile(event, '@tile.Title.Replace(" ", "_")');" style="padding-left: 3px;"></span>
+                    </div>
+                    @*</div>
+                    <div class="live-slide">
+                        <div id="@string.Format("gauge{0}", tile.Title.Replace(" ", "_"))" style="height: 150px; width: 150px"></div>
+                    </div>
+                    <div class="live-slide">
+                        <div id="@string.Format("chart{0}", tile.Title.Replace(" ", "_"))" style="height: 150px; width: 150px"></div>
+                    </div>*@
+                </div>
+            }
+        }
+    }
+</div>
+                    
+<script type="text/javascript">
+  
+        
+</script>

@@ -1,0 +1,64 @@
+﻿@using inReachWebRebuild.Models
+@model inReachWebRebuild.ViewModels.ReasignLocationViewModel
+@{
+    var appUserState = (AppUserState) ViewData["UserState"];
+}
+@if (Model.AddAbove == -1 && Model.AddBelow == -1) {
+    <span id="lblNotesTitle" style="font-size: medium; font-weight: bold; margin-bottom: 25px;"> @($"Reasign {Model.RecordNumber} - {Model.Title} from {Model.CurrentLocationName}")</span>
+}
+@if (Model.AddAbove > -1) {
+    <span id="lblNotesTitle" style="font-size: medium; font-weight: bold; margin-bottom: 25px;"> @($"Add Approver for {Model.RecordNumber} - {Model.Title} ")</span>
+}
+@if (Model.AddBelow > -1) {
+    <span id="lblNotesTitle" style="font-size: medium; font-weight: bold; margin-bottom: 25px;"> @($"Add Allocation for {Model.RecordNumber} - {Model.Title} ")</span>
+}
+    <div style="display: none;  width: 100%" id="ProcessModelContainer" data-model="@Json.Encode(Model)"></div>
+<div style="float: right; margin-bottom: 3px;">
+    <button class="cycle-button bg-cyan fg-white bg-active-darkBlue" onclick="ReassignNode(@Model.NodeUri, $('#Processlocations').data('kendoComboBox').value(), $('#DueDate').data('kendoDatePicker').value(), $('#txtReason').val(), @Model.AddAbove, @Model.AddBelow, @Model.ProcessUri)" data-role="hint"   data-hint="Save">
+        <span class="mif-floppy-disk"></span>
+    </button>
+</div>
+<div style="color: red; display: @(Model.ErrorDisplay.HasMessage ? "block" : "none"); font-size: medium; font-weight: bold;" id="ReassignPartialError">
+    @Html.Raw(Model.ErrorDisplay.Show(400, false))
+</div>
+<div style="margin-bottom: 25px;"></div>
+<div class="heading">
+    <span class="title">Responsible:</span>
+</div>
+<div class="content">
+    <div>
+        @*@Html.Partial("~/Views/Users/_LocationPickerPartial.cshtml", new LocationPickerViewModel {
+            Locations = Model.Locations,
+            ShowExternal = Model.ShowExternal,
+            ShowInternal = Model.ShowInternal,
+            TxtBoxTitle = Model.TxtBoxTitle,
+            SelectedLocationUri = Model.CurrentLocationUri
+        })*@
+        <div style="border-style: none;">
+            <div style="width: 100%; padding-top: 5px; padding-bottom: 5px">
+                <input id="Processlocations" />
+            </div>
+
+
+        </div>
+    </div>
+</div>
+<div class="heading">
+    <span class="title">Due Date:</span>
+</div>
+<div class="content" style="padding-top: 3px">
+
+    @if (Model.CurrentNodeDueDate != DateTime.MinValue) {
+        <input id="DueDate" class="Date" value="@Model.CurrentNodeDueDate"/>
+    } else {
+        <input id="DueDate" class="Date"/>
+    }
+</div>
+<div class="heading">
+    <span class="title"></span>
+</div>
+<div class="content" style="padding-top: 3px">
+    <div class="input-control textarea " style="width: 100%">
+        <textarea id="txtReason" placeholder="Reason:"  class="k-textbox"></textarea>
+    </div>
+</div>

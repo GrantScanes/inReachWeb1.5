@@ -1,0 +1,104 @@
+﻿@using inReachWebRebuild.Models
+@model inReachWebRebuild.ViewModels.TemplatedReportViewerViewModel
+@{
+    Layout = "";
+    var appUserState = (AppUserState) ViewData["UserState"];
+}
+<head>
+    @Scripts.Render("~/bundles/jquery")
+    <script src="@Url.Content("~/scripts/ww.jquery.min.js")"></script>
+    <script src="@Url.Content("~/Scripts/kendo.all.min.js")"></script>
+    <script src="@Url.Content("~/ReportViewer/js/telerikReportViewer-12.0.18.125.min.js")"></script>
+    <link rel="stylesheet" href="http://kendo.cdn.telerik.com/2017.2.504/styles/kendo.common.min.css"/>
+    <link rel="stylesheet" href="http://kendo.cdn.telerik.com/2017.2.504/styles/kendo.blueopal.min.css"/>
+</head>
+<style>
+    #reportViewer1 {
+        height: 100%;
+        position: relative;
+        width: 100%;
+    }
+
+    .trv-nav input {
+        height: auto !important;
+        width: 2em;
+    }
+
+    .listviewitem {
+        padding-bottom: 5px !important;
+        padding-top: 5px !important;
+        font-family: Segoe UI;
+    }
+</style>
+<body>
+
+
+@(Html.TelerikReporting().ReportViewer()
+      .Id("reportViewer1")
+      .ReportServer(new ReportServer
+      {
+          Url = Model.ReportServer,
+          Username = appUserState.ReportingUserName,
+          Password = "Summer16"
+      })
+      .ReportSource(Model.ReportSource)
+      .ViewMode(ViewMode.Interactive)
+      .ScaleMode(ScaleMode.Specific)
+      .Scale(1.0)
+      .PersistSession(false)
+      .PrintMode(PrintMode.AutoSelect)
+      .AuthenticationToken(Model.Token)
+      .ParameterEditors(
+          editors => editors
+              .DateTimeEditor("createDateTimeEditor")
+      )
+      )
+
+</body>
+<script type="text/javascript">
+    function customMatch(parameter) {
+        parameter.type === "System.DateTime";
+    }
+    function createDateTimeEditor(placeholder, options) {
+        $(placeholder).html('<input type="date"/>');
+        var dateTimePicker = $(placeholder),
+            parameter,
+            valueChangedCallback = options.parameterChanged,
+            dropDownList;
+        function onChange() {
+            var dtv = this.value();
+            if (null !== dtv) {
+                dtv = myadjustTimezone(dtv);
+            }
+            valueChangedCallback(parameter, dtv);
+        }
+        return {
+            beginEdit: function(param) {
+                parameter = param;
+                var dt = null;
+                try {
+                    if (param.value) {
+                        dt = myunadjustTimezone(param.value);
+                    }
+                } catch (e) {
+                    dt = null;
+                }
+                $(dateTimePicker).find("input").kendoDatePicker({
+                    format: "dd/MM/yyyy",
+                    parseFormats: ["MM/dd/yyyy"],
+                    change: onChange,
+                    value: dt,
+                    animation: false
+                });
+                dropDownList = $(dateTimePicker).find("input").data("kendoDatePicker");
+                $(dropDownList).addClass('trv-parameter-editor-datetime');
+            }
+        };
+    }
+    function myadjustTimezone(date) {
+        return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds()));
+    };
+    function myunadjustTimezone(date) {
+        return new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds(), date.getUTCMilliseconds());
+    };
+</script>

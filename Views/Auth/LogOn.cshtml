@@ -1,0 +1,177 @@
+﻿@using inReachWebRebuild.Models
+@using inReachWebRebuild.ViewModels
+@{
+    var appUserState = (AppUserState) ViewData["UserState"];
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div style="display: none;  width: 100%" id="ErrorModelContainer" data-model="@Json.Encode(Model.ErrorDisplay)"></div>
+@*<div style='color:white;'>
+    @Html.Raw(Model.ErrorDisplay.Show(400, false))
+    </div>*@
+    @*<div class="content bg-grayLighter" id="Logoncontent" >
+
+        <div class="left" style="background-color: transparent; padding-right: 60px">
+            <p>
+                <div style="font-size: x-large; font-weight: bold;"> Welcome to InReach</div>
+            </p>
+            <p>
+                At Informotion, we implement HPRM as a business enablement tool. Capturing information once, and moving it efficiently and seamlessly through an organisation, making everyone’s day easier along the way.
+            </p>
+            <p>
+                Good system design drives adoption, as compliance happens fluidly and naturally, without the user interrupting their critical tasks to act as a records manager.
+
+            </p>
+        </div>
+
+        <div class="login-form padding20 block-shadow">
+            @if (Request.IsAuthenticated && appUserState.Connected)
+            {
+                <div class="k-content" style="padding-left: 10px; padding-right: 10px;">
+                    @appUserState.Name<br />
+                    @appUserState.Wgs<br />
+                    @appUserState.Ds <br />
+                    @Html.ActionLink("Sign out", "LogOff", "Auth", null, new { @class = "k-button" })
+
+                </div>
+            }
+            else
+            {*@
+<div class="login-form block-shadow bg-black">
+    <form data-role="validator" method="post" action="@Url.Action("LogOn", "Auth")">
+
+        @*<ul class="fieldlist">
+                <li>*@
+        <div class="input-control modern text iconic" data-role="input">
+            @Html.TextBox("Username", null, new { data_validate_func = "required" })
+
+            <span class="label">Your login</span>
+            <span class="informer" style="color: white;">Enter your login or email</span>
+            <span class="placeholder">login</span>
+            <span class="icon mif-user fg-white"></span>
+            <span class="input-state-error mif-warning"></span>
+
+        </div>
+        @*</li>
+                <li>*@
+        <div class="input-control modern password iconic" data-role="input">
+            @Html.Password("Password", "", new { data_validate_func = "required" })
+
+            <span class="label">Your password</span>
+            <span class="informer" style="color: white;">Enter your password</span>
+            <span class="placeholder">password</span>
+            <span class="icon mif-lock fg-white"></span>
+            <span class="input-state-error mif-warning"></span>
+
+            <button class="button helper-button reveal">
+                <span class="mif-looks"></span>
+            </button>
+        </div>
+        @*</li>
+                <li>*@
+    
+
+        @*</li>
+
+                <li>*@
+        <br />
+        @*<label class="switch">
+                    @Html.CheckBox("RememberMe", true)
+                    <span class="check"></span>
+                    <span class="caption">Remember me</span>
+                    <span class="input-state-error mif-warning"></span>
+                    <span class="input-state-success mif-checkmark"></span>
+                </label>*@
+        @*<label class="switch">
+                    <span class="caption">Remember me</span>
+                    <input type="checkbox">
+                    <span class="check"> </span>
+
+                </label>*@
+
+        <br />
+        <br />
+        @*</li>
+
+                </ul>*@
+        <div class="cell">
+            <div class="tile-small bg-white" data-role="tile">
+                <div class="tile-content">
+                    <button type="submit" id="btnLogOn" class="mif-enter mif-2x fg-green" style="height: 100%; width:100%"></button>
+                </div>
+            </div>
+        </div>
+       
+
+    </form>
+</div>
+@Html.Partial("_ExternalLoginsListPartial", new ExternalLoginListViewModel { ReturnUrl = ViewBag.ReturnUrl })
+    @*
+
+                }
+            </div>
+        </div>*@
+
+
+    <script>
+
+
+        $(function () {
+            var form = $(".login-form");
+
+            form.css({
+                opacity: 1,
+                "-webkit-transform": "scale(1)",
+                "transform": "scale(1)",
+                "-webkit-transition": ".5s",
+                "transition": ".5s"
+            });
+        });
+    </script>
+<style>
+    .input-control.modern.iconic .icon {
+        margin-right: 5px;
+        opacity: 100;
+    }
+
+    .input-control.modern .label {
+        color: white;
+    }
+
+    .input-control.modern .informer {
+        color: white;
+    }
+
+    .input-control.modern .placeholder {
+        color: white;
+    }
+
+    .input-control.modern input {
+        color: white;
+    }
+
+    .login-form {
+        -webkit-transform: scale(.8);
+        /*height: 24rem;*/
+        /*background-color: #ffffff;*/
+        left: 50%;
+        margin-left: -9rem;
+        margin-top: -12rem;
+        opacity: 0;
+        position: fixed;
+        top: 50%;
+        transform: scale(.8);
+        width: 18rem;
+    }
+
+</style>
+
+<script>
+    $(document)
+        .ready(function() {
+            var model = $("#ErrorModelContainer").attr("data-model"); 
+            var m = jQuery.parseJSON(model);
+            if (m.HasMessage) {
+                $.Notify({keepOpen: true, type: 'alert', caption: 'Login Attempt Failed', content: m.Message, timeout: 5000});
+            }
+        });
+</script>

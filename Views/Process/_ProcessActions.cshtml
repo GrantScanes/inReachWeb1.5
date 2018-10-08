@@ -1,0 +1,48 @@
+﻿@using inReachWebRebuild.ViewModels
+@model inReachWebRebuild.ViewModels.ProcessActionsViewModel
+
+<div style="display: none;  width: 100%" id="ProcessModelContainer" data-model="@Json.Encode(Model)"></div>
+
+<div style="float: right; margin-bottom: 3px;">
+   
+    @if (Model.Node[0].CanComplete)
+    {
+        <button class="cycle-button bg-cyan bg-active-darkBlue fg-white" onclick="CompleteStepClicked(event, @Model.Uri,@Model.ParentUri);" data-role="hint"   data-hint="Complete">
+            <span class="mif-checkmark"></span>
+            
+        </button>
+    }
+    @if (Model.Node[0].CanInsertAbove)
+    {
+        <button class="cycle-button bg-cyan bg-active-darkBlue fg-white" onclick="AddNode(event, @Model.Uri, @Model.ParentUri,@Model.ParentUri)" data-role="hint"   data-hint="+ Approver">
+            <span class="mif-vertical-align-top"></span>
+           
+        </button>
+    }
+    @if (Model.Node[0].CanInsertBelow)
+    {
+        <button class="cycle-button bg-cyan bg-active-darkBlue fg-white" onclick="AddNode(event, @Model.Uri,0,@Model.ParentUri)" data-role="hint"   data-hint="+ Allocation">
+            <span class="mif-vertical-align-bottom"></span>
+             
+        </button>
+    }
+
+    @if (Model.Node[0].CanReassign)
+    {
+        <button class="cycle-button bg-cyan bg-active-darkBlue fg-white" onclick="ReassignClicked(event, @Model.Uri,@Model.ParentUri);" data-role="hint"   data-hint="Reassign">
+            <span class="mif-users"></span>
+             
+        </button>
+    }
+</div>
+
+<div style="height: 100%; ">
+    @Html.Partial("~/Views/HomeM/_notes.cshtml", new NotesViewModel
+    {
+        Title = Model.Title,
+        Notes = Model.Notes,
+        ReadOnly = true
+    })
+
+   
+</div>

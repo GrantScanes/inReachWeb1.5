@@ -1,0 +1,35 @@
+﻿@using Infor.Model.Helpers;
+@model inReachWebRebuild.ViewModels.LocationViewModel
+@{
+    var res = Model.Location;
+
+    <div class="tile  fg-black @(Model.IsSelected ? "element-selected" : "")"
+         style="background: #EDFFFF; z-index: 10; height: 75px"
+         id="@Html.Raw($"{res.UserId}")"
+         data-name="@res.Name" onclick="LocationSelected(@Html.Raw($"{res.UserId}"), @Model.AllowMultiSelect.ToString().ToLower())">
+        <div class="tile-content">
+            <div data-role="preloader" data-type="cycle" data-style="color" id="@Html.Raw($"PL{res.UserId}")" style="display: none; height: 100%; width: 100%;"></div>
+            @if (res.UserImage == null)
+            {
+                var fg = "fg-green";
+                if (!res.IsInternal)
+                {
+                    fg = "fg-red";
+                }
+                <span class="icon mif-user mif-2x @fg">
+
+                </span>
+            }
+            else
+            {
+                <img src="data:image;base64,@Convert.ToBase64String(res.UserImage)" style="width: 27px; height: 27px" />
+
+            }
+
+            <b>@res.Name</b><br />
+            <span>@res.Email.Truncate(15)</span>
+        </div>
+    </div>
+
+}
+ 

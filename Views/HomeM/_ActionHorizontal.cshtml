@@ -1,0 +1,101 @@
+﻿@using inReachWebRebuild.ViewModels
+@using Infor.Model.Enums
+@model inReachWebRebuild.ViewModels.ActionViewModel
+@{
+    var bg = "bg-emerald fg-white";
+    var width = "150px";
+    switch (Model.Action.Status)
+    {
+        case InforActionStatus.Current:
+            bg = "bg-emerald  fg-white";
+            break;
+        case InforActionStatus.Completed:
+            bg = "bg-darkIndigo  fg-white";
+            break;
+        case InforActionStatus.Pending:
+            bg = "bg-amber  fg-grayDarker";
+            break;
+        default:
+            throw new ArgumentOutOfRangeException();
+    }
+}
+
+<li>@Model.Action.Name.Trim()
+    @if (Model.Action.Children.Any())
+    {
+        <ul>
+            @foreach (var action in Model.Action.Children)
+            {
+                @Html.Partial("_ActionHorizontal", new ActionViewModel { Action = action })
+            }
+        </ul>
+
+    }
+</li>
+@*@if (!Model.Action.Children.Any())
+{
+    <div class="cell">
+        <div class="@string.Format("tile-small {0}", bg)" style="width: @width">
+            <div class="tile-content">
+                <b>@Model.Action.Name</b>
+                <br/>
+                @Model.Action.DueDate
+                <br/>
+                @Model.Action.AssignedTo.Name
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="cell">
+        <div class="treeview" data-role="treeview" data-on-click="LeafClicked">
+            <ul>
+                <li class="node">
+                    <span class="leaf">
+                            <div class="cell">
+                                <div class="@string.Format("tile-small {0}", bg)" style="width: @width">
+                                    <div class="tile-content">
+                                        <b>@Model.Action.Name</b>
+                                        <br />
+                                        @Model.Action.DueDate
+                                        <br />
+                                        @Model.Action.AssignedTo.Name
+                                    </div>
+                                </div>
+                            </div>
+                        </span>
+                    <span class="node-toggle"></span>
+                    <ul>
+                        <li class="node">
+                            <span class="leaf">
+                                    <div class="flex-grid">
+                                        <div class="row">
+                                            @foreach (var action in Model.Action.Children)
+                                            {
+                                                <div class="cell">
+                                                    <div class="@string.Format("tile-small {0}", bg)" style="width: @width">
+                                                        <div class="tile-content">
+                                                            <b>@action.Name</b>
+                                                            <br />
+                                                            @action.DueDate
+                                                            <br />
+                                                            @action.AssignedTo.Name
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                if (action.Children.Any())
+                                                {
+                                                    @Html.Partial("_ActionHorizontal", new ActionViewModel {Action = action})
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                </span>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+}*@

@@ -1,0 +1,47 @@
+﻿@using inReachWebRebuild.Models
+@{
+    AppUserState appUserState = (AppUserState)this.ViewData["UserState"];
+}
+
+
+    @if (Request.IsAuthenticated && appUserState.Connected)
+    {
+
+         
+            <div class="k-state-selected" style="height: 24px; ">
+                <span id="commandbarLogOff" style="float: right; padding-right: 20px;">
+
+
+                     
+                        <img src='@Url.Content("/Content/Images/SignOut.png")'  onclick="location.href = '@Url.Action("LogOff", "Auth")'" style="cursor: pointer; Height: 16px; padding-left: 10px; padding-right: 10px; width: 16px; padding-bottom: 3px;" title="Logoff" />
+                    
+
+                </span>
+            </div>
+        
+        <span class="k-content" style="padding-left: 10px; padding-right: 10px; height: 100px;">
+<table>
+    <tr>
+        <td><b>User Name:</b></td>
+        <td>@appUserState.Name</td>
+    </tr>
+    <tr>
+        <td><b>Workgroup:</b></td>
+        <td>@appUserState.Wgs</td>
+    </tr>
+    <tr>
+        <td><b>Dataset ID:</b></td>
+        <td>@appUserState.Ds</td>
+    </tr>
+</table>
+   
+
+
+
+</span>
+            }
+            else
+            {
+                @Html.ActionLink("Sign in", "LogOn", "Auth", null, new { @class = "k-button" })
+            }
+

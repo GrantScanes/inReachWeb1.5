@@ -1,0 +1,102 @@
+﻿@using System.Web.Configuration
+@using System.Web.Script.Serialization
+@using inReachWebRebuild.Models
+@using Infor.Model.ApplicationServices
+@using Infor.Model.DocumentServices
+ 
+
+@{ var serializer = new JavaScriptSerializer(); }
+@{
+    var appUserState = (AppUserState) ViewData["UserState"];
+}
+@{
+    ViewBag.Title = "inReach Web";
+   }
+
+ 
+<div id="placeholder" style="height: 80%"></div>
+
+ 
+<script src="https://d3js.org/d3.v4.min.js"></script>
+
+ 
+
+<script type="text/javascript">
+     
+    var u_data = {};
+    function nodeclick(id) { console.log("clicked " + id); };
+    function renderNode(tile, item) {
+        var status = item.status;
+        var colour;
+        switch (status) {
+        case 0:
+            colour = "blue"; //Current
+            break;
+        case 1:
+            colour = "orange"; //Pending
+            break;
+        case 2:
+            colour = "gray"; //Cancelled
+            break;
+        case 3:
+            colour = "green"; //Completed
+            break;
+        case -1:
+            colour = "red"; //Completed
+            break;
+        }
+        $(tile)[0].style.backgroundColor = colour;
+    }
+    var og;
+    $(document).ready(function() {
+        u_data =
+        [
+            { id: 1, parentId: null, desc: "Amber McKenzie", instr: "some data", haschild: true, status: 1 },
+            { id: 2, parentId: 1, desc: "test", instr: "some data", haschild: false, status: 1 },
+            { id: 3, parentId: 1, desc: "test 1", instr: "some data", haschild: false, status: 0 },
+            { id: 5, parentId: 1, desc: "test 3", instr: "some data", haschild: false, status: 1 },
+            { id: 6, parentId: 4, desc: "root 1", instr: "some data", haschild: false, status: 2 },
+            { id: 22, parentId: 6, desc: "root 1.1", instr: "some data", haschild: false, status: 0 },
+            { id: 7, parentId: 3, desc: "third level 1", instr: "some data", haschild: false, status: 1 },
+            { id: 9, parentId: 7, desc: "fourth level 1", instr: "some data", haschild: false, status: -1 },
+            { id: 10, parentId: 7, desc: "fourth level 2", instr: "some data", haschild: false, status: 1 },
+            { id: 11, parentId: 2, desc: "blue 32", instr: "some data", haschild: false, status: 1 },
+            { id: 12, parentId: 2, desc: "what does not rhym with orange", instr: "some data", haschild: false, status: -1 },
+            { id: 13, parentId: 11, desc: "asdf", instr: "some data", haschild: false, status: 2 },
+            { id: 14, parentId: 11, desc: "dfgf", instr: "some data", haschild: false, status: 1 },
+            { id: 15, parentId: 5, desc: "q", instr: "some data", haschild: false, status: 1 },
+            { id: 16, parentId: 5, desc: "a", instr: "some data", haschild: false, status: 1 },
+            { id: 21, parentId: 16, desc: "f", instr: "some data", haschild: false,status: 3 },
+            { id: 18, parentId: 15, desc: "11", instr: "some data", haschild: false, status: 1 },
+            { id: 19, parentId: 15, desc: "22", instr: "some data", haschild: false, status: 3 },
+            { id: 20, parentId: 15, desc: "33", instr: "some data", haschild: false, status: 1 },
+            { id: 8, parentId: 3, desc: "third level 2", instr: "some data", haschild: false, status: 3 },
+            { id: 4, parentId: null, desc: "root", instr: "some data", haschild: false, status: 1 }
+        ];
+     
+        var nodeorgchart = $("#placeholder").inforOrgChart({
+            id: "placeholder",
+            data: u_data,
+            nodeClick: "",
+            nodeTitleField: "desc",
+            nodeLine1Field: "desc",
+            nodeLine2Field: "instr", 
+            nodeLine1Title: "desc:",
+            nodeLine2Title: "instr:", 
+            allowMultiSelected:false,
+            renderNode: "",
+            idField: "id",
+            parentIdField: "parentId",
+            ShowZoomButtons: true,
+            vertical: true,
+            contextNodeid: 3,
+            allowSelect: false
+        });
+ 
+
+    });
+</script>
+<style>
+
+
+</style>

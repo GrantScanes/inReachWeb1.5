@@ -1,0 +1,35 @@
+﻿@using System.Web.Script.Serialization
+@using inReachWebRebuild.Models
+@using inReachWebRebuild.ViewModels
+@model inReachWebRebuild.ViewModels.LocationsViewModel
+@{ 
+    var serializer = new JavaScriptSerializer();
+    var appUserState = (AppUserState)ViewData["UserState"];
+}
+
+<div class="tile-container bg-grayDarker" style="height: 100%; padding-top: 80px; width: 100%">
+    @if (!Model.Locations.Any())
+    {
+    }
+    @foreach (var loc in Model.Locations)
+    {
+        @Html.Partial("_LocationTile", new LocationViewModel { Location = loc });
+    }
+</div>
+
+<script type="text/javascript">
+
+    $(".carousel").kendoTouch({
+        filter: ".slide",
+        enableSwipe: true,
+        swipe: function (e) {
+            console.log();
+            if (e.direction === 'right') {
+                $(e.sender.element["0"]).data('carousel').priorSlide();
+            }
+            if (e.direction === 'left') {
+                $(e.sender.element["0"]).data('carousel').nextSlide();
+            }
+        }
+    });
+</script>

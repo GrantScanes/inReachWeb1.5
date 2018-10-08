@@ -1,0 +1,106 @@
+﻿@using System.Web.Script.Serialization
+@using Infor.Model
+@using Infor.Model.Enums
+@using Infor.Model.SchedulerServices
+@model inReachWebRebuild.ViewModels.SecondsViewModel
+@{
+    var serializer = new JavaScriptSerializer();
+    
+}
+ 
+<span>@(Model.Schedule?.ToString() ?? "")</span>
+
+ 
+<span class="caption">Frequency</span>
+<div class="cell ">
+    <div class="input-control select">
+        <select onchange="GetView(this.value, '@Model.Id')" id="ScheduleFrequency">
+            <option value="Seconds" @(Model.Uom == TimeUoM.Seconds ? "selected" : "")>Seconds</option>
+            <option value="Minutes" @(Model.Uom == TimeUoM.Minutes ? "selected" : "")>Minutes</option>
+            <option value="Hours" @(Model.Uom == TimeUoM.Hours ? "selected" : "")>Hours</option>
+            <option value="Days" @(Model.Uom == TimeUoM.Days ? "selected" : "")>Days</option>
+            <option value="Weekdays" @(Model.Uom == TimeUoM.Weekdays ? "selected" : "")>Weekdays</option>
+            <option value="Weeks" @(Model.Uom == TimeUoM.Weeks ? "selected" : "")>Weeks</option>
+            <option value="Months" @(Model.Uom == TimeUoM.Months ? "selected" : "")>Months</option>
+            <option value="Years" @(Model.Uom == TimeUoM.Years ? "selected" : "") )>Years</option>
+        </select>
+    </div>
+</div>
+
+    <span class="caption">Repeating</span>
+    <label class="switch" style="width: 100%; padding-top: 5px;">
+        <input type="checkbox" id="chkRepeating" checked="@(Model.Schedule != null && Model.Schedule.Recuring)">
+        <span class="check"></span>
+    </label>
+
+<span class="caption">Disabled</span>
+<label class="switch" style="width: 100%; padding-top: 5px;">
+    <input type="checkbox"  id="chkDisabled" checked="@(Model.Schedule != null && Model.Schedule.Disabled)">
+    <span class="check"></span>
+</label>
+
+
+    @{
+        var rows = Model.Props.GroupBy(g => g.DisplayOrder);
+        foreach (var nameGroup in rows)
+        {
+            <div class="row" style="width: 100%">
+                @foreach (var r in nameGroup.OrderBy(c => c.DisplayColumn))
+                {
+                    var span = "auto-size";
+                    if (r.DisplayColumnSpan > 1)
+                    {
+                        span = $"size{r.DisplayColumnSpan}";
+                    }
+
+                    <div class="cell @span">
+                        @switch (r.ControlType)
+                        {
+                            case InforDataItemControlType.Location:
+                                break;
+                            case InforDataItemControlType.FreeText:
+                                break;
+                            case InforDataItemControlType.FreeTextMutiline:
+                                break;
+                            case InforDataItemControlType.Date:
+                                <span class="caption">@r.Name</span><br />
+                                <input id="DueDate" class="Date" />
+                                break;
+                            case InforDataItemControlType.DateTime:
+                                break;
+                            case InforDataItemControlType.Integer:
+                                <span class="caption">@r.Name</span><br />
+                                <div class="input-control text">
+                                    <input   id="@r.BindingName" placeholder="@r.Name" class="DataProp numerictb" value="@r.Value">
+                                </div>
+                                break;
+                            case InforDataItemControlType.Time:
+                                <span class="caption">@r.Name</span><br />
+                                <div class="input-control text">
+                                    <input id="@r.BindingName"  value="@r.Value" title="timepicker" style="width: 100%;" class="DataProp time"/>
+                                </div>
+                                break;
+                            case InforDataItemControlType.Option:
+                                <span class="caption">@r.Name</span><br/>
+                               
+
+                                <div class="input-control select">
+                                    <input id="@r.BindingName" class="DataProp optionDD incharm" data-Options="@serializer.Serialize(r.OptionChoices)"  value="@r.Value"/>
+
+                                   
+                                </div>
+                                break;
+                            case InforDataItemControlType.Boolean:
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
+
+
+                    </div>
+                }
+            </div>
+        }
+    }
+
+ 

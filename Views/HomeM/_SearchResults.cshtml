@@ -1,0 +1,243 @@
+﻿@using inReachWebRebuild.ViewModels
+@model inReachWebRebuild.ViewModels.SearchResultsViewModel
+
+
+
+
+@if (!Model.Results.Any())
+{
+}
+
+@foreach (var rec in Model.Results)
+{
+    var res = rec;
+    @Html.Partial("/Views/HomeM/_RecordTile.cshtml", new RecordTileViewModel {Record = res})
+    ;
+}
+<script id="treeview-template" type="text/kendo-ui-template">
+  
+    # var colour; #
+
+    # switch (item.Status) {
+     
+    case 0: 
+    colour = "blue"; 
+    break;
+        case 1:
+    colour = "green";
+     break;
+     
+    case 2:
+     colour = "orange";
+     break;
+    } #
+  
+    <div class="tile-wide" id="#: item.Uri #" style="background-color: #= colour #" >
+        <div class="tile-content">
+            <span class="orgchartTileSpans">
+                <b>#: item.Name #</b> <br><br>
+            </span>
+            <span class="orgchartTileSpans">
+                <b>#: item.AllocationString #</b> <br><br>
+            </span>
+            <span class="orgchartTileSpans">
+                <b>Status:</b> #: item.StatusString #  <br><br>
+            </span>
+            <span class="orgchartTileSpans">
+                <b>Due:</b>  #: item.DateDueString # <br><br>
+            </span>
+        </div>
+    </div>
+    
+
+</script>
+
+<script type="text/javascript">
+
+    $(".carousel").kendoTouch({
+        filter: ".slide",
+        enableSwipe: true,
+        swipe: function (e) {
+            console.log('swipe');
+            if (e.direction === 'right') {
+                $(e.sender.element["0"]).data('carousel').priorSlide();
+                e.sender.cancel();
+            }
+            if (e.direction === 'left') {
+                $(e.sender.element["0"]).data('carousel').nextSlide();
+                e.sender.cancel();
+            }
+        }
+    });
+
+
+    //$(".carousel", ".tileswipe")
+    //    .each(function (index, item) {
+    //   $(item).swipe({
+    //            swipe: function (event, direction) {
+    //                if (direction === 'right') {
+    //                    $(item).data('carousel').priorSlide();
+    //                }
+    //                if (direction === 'left') {
+    //                    $(item).data('carousel').nextSlide();
+    //                }
+    //            },
+    //            threshold: 3,
+    //            allowPageScroll: "auto"
+    //        });
+    //    });
+    function PropertiesClick(event, uri) {
+        console.log('click');
+        event.stopPropagation();
+        $("#PropertiesPartialPL").show();
+        var charm = document.getElementById("PropertiesCharm");
+        showMetroCharm(charm);
+        $.ajax({
+            url: '@Url.Action("GetPropertiesView", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { uri: uri },
+            success: function(result) {
+                var partial = document.getElementById("PropertiesPartial");
+                partial.innerHTML = result;
+                $("#PropertiesPartialPL").hide();
+            }
+        });
+    }
+    function NotesClick(event, uri) {
+        event.stopPropagation();
+        $("#NotesPartialPL").show();
+        var charm = document.getElementById("NotesCharm");
+        showMetroCharm(charm);
+        console.log(uri);
+        $.ajax({
+            url: '@Url.Action("GetNotesView", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { uri: uri, processUri: 0 },
+            success: function(result) {
+                var partial = document.getElementById("NotesPartial");
+                partial.innerHTML = result;
+                $("#NotesPartialPL").hide();
+            }
+        });
+    }
+    function ActionClicked(item) {
+        $("#ActionActionsPL").show();
+        
+        var partial = document.getElementById("ActionsActionsPartial");
+        $("#ActionsActionsPartial").empty();
+        $.ajax({
+            url: '@Url.Action("GetAction", "Actions")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: {
+                uri: item.Uri
+            },
+            success: function(result) {
+                partial.innerHTML = result;
+               
+
+                $("#ActionActionsPL").hide();
+            }
+        });
+    }
+
+    function ActionsClick(event, uri) {
+        event.stopPropagation();
+        $("#ActionsPartialPL").show();
+        var charm = document.getElementById("ActionsCharm");
+        showMetroCharm(charm);
+       
+        $.ajax({
+            url: '@Url.Action("GetActionsView", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { uri: uri, vertical: window.verticalView },
+            success: function(result) {
+                var partial = document.getElementById("ActionsPartial");
+                partial.innerHTML = result;
+                var model = $("#ModelContainer").attr("data-model");
+                var m = jQuery.parseJSON(model);
+                 
+            
+
+
+                var nodeorgchart = $("#actionsChart").inforOrgChart({
+                    id: "actionsChart",
+                    data: m.Actions,
+                    nodeClick: "ActionClicked",
+                    nodeTitleField: "Name",
+                    nodeLine1Title: "Responsible:",
+                    nodeLine1Field: "AllocationString",
+                    nodeLine2Title: "Due:", 
+                    nodeLine2Field: "DateDueString", 
+                    nodeLine3Title: "Duration:", 
+                    nodeLine3Field: "DurationString", 
+                    allowMultiSelected:false,
+                    renderNode: "renderNodeEventHandler",
+                    idField: "Uri",
+                    parentIdField: "ParentUri",
+                    ShowZoomButtons: true,
+                    vertical: true,
+                    contextNodeid: m.CurrentActionUri,
+                    allowSelect: true
+                });
+
+                $("#ActionsPartialPL").hide();
+               
+               
+            }
+        });
+    }
+    function renderNodeEventHandler(tile, item) {
+        var status = item.Status;
+        var colour;
+
+                switch (status) {
+            //current
+            case 0:
+                colour = "blue";
+                break;
+            //Completed
+            case 1:
+                colour = "green";
+                break;
+            //Pending
+            case 2:
+                colour = "orange";
+                break;
+        }
+        $(tile)[0].style.backgroundColor = colour;
+    }
+    function ViewChanged(event, uri, checked) {
+        event.stopPropagation();
+        $("#ActionsPartialPL").show();
+        window.verticalView = checked;
+        
+        $.ajax({
+            url: '@Url.Action("GetActionsView", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { uri: uri, vertical: window.verticalView },
+            success: function(result) {
+                var partial = document.getElementById("ActionsPartial");
+                partial.innerHTML = result;
+            }
+        });
+     
+        $("#ActionsPartialPL").hide();
+        $.ajax({
+            type: 'post',
+            cache: false,
+            async: true,
+            data: { autoScroll: window.autoScrollCaro, autoClose: window.autoCloseCharm, vertical: checked },
+            url: '@Url.Action("SaveUserToggle", "HomeM")'
+        });
+    }
+</script>

@@ -1,0 +1,98 @@
+﻿@using System.Web.Configuration
+@using inReachWebRebuild.Models
+@using Infor.Model.ApplicationServices
+@model inReachWebRebuild.ViewModels.FileViewModel
+
+@{
+    var appUserState = (AppUserState)ViewData["UserState"];
+}
+<div class="form" style="height: 100%">
+    <div id="iframeEditor">
+    </div>
+</div>
+@Scripts.Render(new[] { SettingsManager.GetSettingValueAsString("files.docservice.url.api") })
+<script type="text/javascript" language="javascript">
+    $(document).ready(function () {
+           alert("load");
+        docEditor = new DocsAPI.DocEditor("iframeEditor",
+        {
+            width: "100%",
+            height: "100%",
+            type: 'view',
+            documentType: '@Model.FileModel.DocumentType',
+            document: {
+                title: fileName,
+                url: '@Model.FileModel.FileUri',
+                fileType: fileType,
+                key: '@Model.FileModel.Key',
+                info: {
+                    author:  '@appUserState.Name' ,
+                    created: '@DateTime.Now.ToShortDateString()'
+                },
+                permissions: {
+                    edit: '@DocManagerHelper.EditedExts.Contains(Path.GetExtension(Model.FileModel.FileName))' === "True",
+                    download: true
+                }
+            },
+
+            events: {
+                'onReady': onReady,
+                'onDocumentStateChange': onDocumentStateChange,
+                'onRequestEditRights': onRequestEditRights,
+                'onError': onError,
+                'onOutdatedVersion': onOutdatedVersion
+            }
+        });
+    });
+    console.log("here");
+
+    var docEditor;
+    var fileName = '@Model.FileModel.FileName';
+    var fileType = '@Path.GetExtension(Model.FileModel.FileName).Trim('.').ToLower()';
+    var innerAlert = function (message) {
+        if (console && console.log)
+            console.log(message);
+    };
+    var onReady = function () {
+        innerAlert("Document editor ready");
+    };
+    var onDocumentStateChange = function (event) {
+        var title = document.title.replace(/\*$/g, "");
+        document.title = title + (event.data ? "*" : "");
+    };
+    var onRequestEditRights = function () {
+        location.href = location.href.replace(RegExp("action=view\&?", "i"), "");
+    };
+    var onError = function (event) {
+        if (event)
+            innerAlert(event.data);
+    };
+    var onOutdatedVersion = function (event) {
+        location.reload(true);
+    };
+    var сonnectEditor = function () {
+
+    };
+    if (window.addEventListener) {
+        window.addEventListener("load", сonnectEditor);
+    } else if (window.attachEvent) {
+        window.attachEvent("load", сonnectEditor);
+    }
+    function getXmlHttp() {
+        var xmlhttp;
+        try {
+            xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
+        } catch (e) {
+            try {
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            } catch (ex) {
+                xmlhttp = false;
+            }
+        }
+        if (!xmlhttp && typeof XMLHttpRequest != 'undefined') {
+            xmlhttp = new XMLHttpRequest();
+        }
+        return xmlhttp;
+    }
+
+</script>

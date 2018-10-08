@@ -1,0 +1,47 @@
+@using System.Web.Script.Serialization
+@model inReachWebRebuild.ViewModels.CompleteProcessViewModel
+@{ var serializer = new JavaScriptSerializer(); }
+<span id="lblActionsTitle" style="font-size: medium; font-weight: bold;"> @($"Complete step for {Model.RecordNumber} - {Model.Title}");</span>
+<div style="    font-size: medium; font-weight:bold; color: red; display: @(Model.ErrorDisplay.HasMessage ? "block" : "none");" id="CompleteProcessPartialError">
+    @Html.Raw(Model.ErrorDisplay.Show(400, false))
+</div>
+<div style="float: right; margin-bottom: 3px;"> 
+    <button class="cycle-button bg-cyan fg-white bg-active-darkBlue" id="CompleteStep" onclick="CompleteStepFinalClicked(@Model.Uri,@Model.RootUri );" data-role="hint"   data-hint="Save">
+        <span class="icon mif-floppy-disk"></span>
+        
+    </button>
+  
+</div>
+    <div style="border-style: none; margin-top: 20px; width: 100%">
+        @*<input id="TaskFlags" />*@
+        @*@(Html.Kendo().ComboBox()
+            .Name("TaskFlags") //The name of the ComboBox is mandatory. It specifies the "id" attribute of the widget.
+            .DataTextField("DisplayString") //Specify which property of the Product to be used by the ComboBox as a text.
+            .DataValueField("DisplayString") //Specify which property of the Product to be used by the ComboBox as a value.
+            .BindTo(new SelectList(Model.Stamps, "DisplayString", "DisplayString"))
+
+            )*@
+        @*<div class="input-control select" id="TaskFlags">*@
+        <select id="TaskFlags">
+            @foreach (var f in Model.Stamps)
+            {
+                <option data-value="@serializer.Serialize(f)" value="@serializer.Serialize(f)">@f.DisplayString</option>
+            }
+        </select>
+        @*</div>*@
+
+        <div style="height: 20%;">
+            <div class="input-control textarea " style="width: 80%">
+                <textarea id="CompleteNotesTextArea" placeholder="Enter Notes:"></textarea>
+            </div>
+           
+        </div>
+
+
+
+
+    </div>
+
+
+
+

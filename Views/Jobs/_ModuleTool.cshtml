@@ -1,0 +1,15 @@
+﻿@using System.Web.Script.Serialization
+@model inReachWebRebuild.ViewModels.ModuleToolViewModel
+@{ var serializer = new JavaScriptSerializer(); }
+@{
+    var mod = Model.Module;
+}
+<div class="cell @($"size{mod.DisplayColumnSpan}") padding10">
+    <div class="tile fg-black" style="background: #EDFFFF; height: 75px; z-index: 10;" id="@Html.Raw($"{mod.Id}")" data-Module="@serializer.Serialize(mod) ">
+        <div class="tile-content">
+            <b>@mod.Title</b><br/>
+            <br />
+            @mod.FriendlyString<br/>
+        </div>
+    </div>
+</div>

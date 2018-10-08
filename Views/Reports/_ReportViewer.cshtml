@@ -1,0 +1,37 @@
+﻿@using System.Web.Script.Serialization
+@using inReachWebRebuild.Models
+@model inReachWebRebuild.ViewModels.TemplatedReportViewerViewModel
+
+ @{
+     var appUserState = (AppUserState)ViewData["UserState"];
+}
+    <style>
+        #reportViewer1 {
+            
+            width: 100%;
+            height: 100%;
+            
+        }
+    </style>
+
+@Html.Raw(Model.ReportServer)
+    @(Html.TelerikReporting().ReportViewer()
+        .Id("reportViewer1")
+  .ReportServer(new ReportServer()
+  {
+      Url = Model.ReportServer,
+      Username = "david.singh@informotion",
+      Password = "Summer16"
+  })
+        .ReportSource(Model.ReportSource)
+        .ViewMode(ViewMode.Interactive)
+        .ScaleMode(ScaleMode.Specific)
+        .Scale(1.0)
+        
+        .PersistSession(false)
+        .PrintMode(PrintMode.AutoSelect)
+        .AuthenticationToken(Model.Token)
+    )
+
+
+ 

@@ -1,0 +1,283 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@using System.Web.Script.Serialization
+@using inReachWebRebuild.ViewModels
+@model inReachWebRebuild.ViewModels.SettingsViewModel
+@{
+    var serializer = new JavaScriptSerializer();
+}
+<div style="color: white;">
+    @Html.Raw(Model.ErrorDisplay.Show(400, false))
+</div>
+<div class="flex-grid bg-grayDark" style="width: 100%">
+
+
+
+    @if (Model.Settings.Any()) {
+        var collapsed = "";
+        var settings = Model.Settings;
+        var distinctSectionsNoPageTab = Model.Settings.Where(s => string.IsNullOrEmpty(s.PageTab) && string.IsNullOrEmpty(s.SectionTab)).GroupBy(setting => setting.Section).Select(group => group.First());
+        foreach (var distinctSection in distinctSectionsNoPageTab)
+        {
+            var maxColumnsForSection = settings.Where(g => g.Section == distinctSection.Section && string.IsNullOrEmpty(g.PageTab) && string.IsNullOrEmpty(g.SectionTab)).Max(d => d.DisplayColumn);
+            collapsed = settings.Any(c => c.Section == distinctSection.Section && c.Collapsed) ? "collapsed" : "";
+            <div class="row">
+                <div class="cell size12">
+                    <div class="@($"panel {collapsed}")" data-role="panel" data-on-expand="panelCollapseExpand" data-on-collapse="panelCollapseExpand">
+                        <div class="heading">
+                            <span class="title">@distinctSection.Section</span>
+                        </div>
+                        <div class="content">
+                            @{
+                                var section = distinctSection;
+                                var distinctSettingsbyDisplayOrder = settings.Where(s => s.Section == section.Section && string.IsNullOrEmpty(section.PageTab) && string.IsNullOrEmpty(section.SectionTab)).GroupBy(gd => gd.DisplayOrder).Select(group => group.First());
+                                foreach (var displayOrder in distinctSettingsbyDisplayOrder.OrderBy(d => d.DisplayOrder))
+                                {
+                                    <div class="row">
+                                        @{
+                                            var section1 = distinctSection;
+                                            var order = displayOrder;
+                                            var settingsForSectionAndDisplayOrder = settings.Where(s => s.Section == section1.Section && s.DisplayOrder == order.DisplayOrder && string.IsNullOrEmpty(s.PageTab) && string.IsNullOrEmpty(s.SectionTab));
+                                            foreach (var setting in settingsForSectionAndDisplayOrder.OrderBy(d => d.DisplayColumn))
+                                            {
+                                                @Html.Partial("_Setting", new SettingViewModel {Setting = setting})
+                                            }
+                                        }
+                                    </div>
+                                }
+                            }
+                            @if (Model.Settings.Any(t => string.IsNullOrEmpty(t.PageTab) && !string.IsNullOrEmpty(t.SectionTab)))
+                            {
+                                var sectionTabs = Model.Settings.Where(t => string.IsNullOrEmpty(t.PageTab) && !string.IsNullOrEmpty(t.SectionTab)).GroupBy(setting => setting.SectionTab).Select(group => group.First());
+                                <div class="tabcontrol" data-role="tabcontrol">
+                                    <ul class="tabs bg-grayDark">
+                                        @foreach (var stab in sectionTabs)
+                                        {
+                                            <li>
+                                                <a href="#@stab.SectionTab">@stab.SectionTab</a>
+                                            </li>
+                                        }
+                                    </ul>
+                                    <div class="frames bg-grayDark fg-white">
+                                        @foreach (var stab in sectionTabs)
+                                        {
+                                            <div class="frame  " style="background: #e8f1f4; color: #1d1d1d" id="@stab.SectionTab">
+                                                <div class="flex-grid" style="width: 100%">
+                                                    @{
+                                                        var distinctSettingsbyDisplayOrderForSectionTab = settings.Where(s => string.IsNullOrEmpty(s.PageTab) && s.SectionTab == stab.SectionTab).GroupBy(gd => gd.DisplayOrder).Select(group => group.First());
+                                                        foreach (var displayOrder in distinctSettingsbyDisplayOrderForSectionTab.OrderBy(d => d.DisplayOrder))
+                                                        {
+                                                            <div class="row">
+                                                                @{
+                                                                    var order = displayOrder;
+                                                                    var settingsForSectionAndDisplayOrder = settings.Where(s => s.DisplayOrder == order.DisplayOrder && s.SectionTab == stab.SectionTab);
+                                                                    foreach (var setting in settingsForSectionAndDisplayOrder.OrderBy(d => d.DisplayColumn))
+                                                                    {
+                                                                        @Html.Partial("_Setting", new SettingViewModel {Setting = setting})
+                                                                    }
+                                                                }
+                                                            </div>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        if (Model.Settings.Any(pt => !string.IsNullOrEmpty(pt.PageTab)))
+        {
+            <div class="tabcontrol" data-role="tabcontrol">
+                <ul class="tabs">
+                    @{
+                        var pageTabs = Model.Settings.Where(t => !string.IsNullOrEmpty(t.PageTab)).GroupBy(setting => setting.PageTab).Select(group => group.First());
+                        foreach (var tab in pageTabs)
+                        {
+                            <li>
+                                <a href="#@tab.PageTab">@tab.PageTab</a>
+                            </li>
+                        }
+                    }
+                </ul>
+                <div class="frames bg-grayDark fg-white">
+
+                    @foreach (var tab in pageTabs)
+                    {
+                        <div class="frame   " style="background: #e8f1f4" id="@tab.PageTab">
+                            @{
+                                var distinctSectionsForPageTab = Model.Settings.Where(pt => pt.PageTab == tab.PageTab).GroupBy(setting => setting.Section).Select(group => group.First());
+                                foreach (var distinctSection in distinctSectionsForPageTab)
+                                {
+                                    var section = distinctSection;
+                                    var maxColumnsForSection = settings.Where(g => g.Section == distinctSection.Section && g.PageTab == tab.PageTab).Max(d => d.DisplayColumn);
+                                    collapsed = settings.Any(c => c.Section == distinctSection.Section && c.Collapsed) ? "collapsed" : "";
+                                    <div class="row">
+                                        <div class="cell size12">
+                                            <div class="@($"panel {collapsed}")" data-role="panel" data-on-expand="panelCollapseExpand" data-on-collapse="panelCollapseExpand">
+                                                <div class="heading">
+                                                    <span class="title">@distinctSection.Section</span>
+                                                </div>
+                                                <div class="content">
+                                                    @{
+                                                        var distinctSettingsbyDisplayOrder = settings.Where(s => s.Section == section.Section && s.PageTab == tab.PageTab && string.IsNullOrEmpty(s.SectionTab)).GroupBy(gd => gd.DisplayOrder).Select(group => group.First());
+                                                        foreach (var displayOrder in distinctSettingsbyDisplayOrder.OrderBy(d => d.DisplayOrder))
+                                                        {
+                                                            <div class="row">
+                                                                @{
+                                                                    var section1 = distinctSection;
+                                                                    var order = displayOrder;
+                                                                    var settingsForSectionAndDisplayOrder = settings.Where(s => s.Section == section1.Section && s.DisplayOrder == order.DisplayOrder && s.PageTab == tab.PageTab);
+                                                                    foreach (var setting in settingsForSectionAndDisplayOrder.OrderBy(d => d.DisplayColumn))
+                                                                    {
+                                                                        @Html.Partial("_Setting", new SettingViewModel { Setting = setting })
+                                                                    }
+                                                                }
+                                                            </div>
+                                                                    }
+                                                                    if (Model.Settings.Any(t => t.PageTab == tab.PageTab && !string.IsNullOrEmpty(t.SectionTab) && t.Section == section.Section))
+                                                                    {
+                                                                        var sectionTabs = Model.Settings.Where(t => t.PageTab == tab.PageTab && !string.IsNullOrEmpty(t.SectionTab) && t.Section == section.Section).GroupBy(setting => setting.SectionTab).Select(group => group.First());
+                                                                        <div class="tabcontrol" data-role="tabcontrol">
+                                                                            <ul class="tabs bg-grayDark">
+                                                                                @foreach (var stab in sectionTabs)
+                                                                                {
+                                                                                    <li>
+                                                                                        <a href="#@stab.SectionTab">@stab.SectionTab</a>
+                                                                                    </li>
+                                                                                }
+                                                                            </ul>
+                                                                            <div class="frames bg-grayDark fg-white">
+                                                                                @foreach (var stab in sectionTabs)
+                                                                                {
+                                                                                    <div class="frame  " style="background: #e8f1f4; color: #1d1d1d" id="@stab.SectionTab">
+                                                                                        <div class="flex-grid" style="width: 100%">
+                                                                                            @{
+                                                                                                var distinctSettingsbyDisplayOrderForSectionTab = settings.Where(s => s.Section == section.Section && s.PageTab == tab.PageTab && s.SectionTab == stab.SectionTab).GroupBy(gd => gd.DisplayOrder).Select(group => group.First());
+                                                                                                foreach (var displayOrder in distinctSettingsbyDisplayOrderForSectionTab.OrderBy(d => d.DisplayOrder))
+                                                                                                {
+                                                                                                    <div class="row">
+                                                                                                        @{
+                                                                                                            var section1 = distinctSection;
+                                                                                                            var order = displayOrder;
+                                                                                                            var settingsForSectionAndDisplayOrder = settings.Where(s => s.Section == section1.Section && s.DisplayOrder == order.DisplayOrder && s.PageTab == tab.PageTab && s.SectionTab == stab.SectionTab);
+                                                                                                            foreach (var setting in settingsForSectionAndDisplayOrder.OrderBy(d => d.DisplayColumn))
+                                                                                                            {
+                                                                                                                @Html.Partial("_Setting", new SettingViewModel { Setting = setting })
+                                                                                                            }
+                                                                                                        }
+                                                                                                    </div>
+                                                                                                            }
+                                                                                            }
+                                                                                        </div>
+                                                                                    </div>
+                                                                                                            }
+                                                                            </div>
+                                                                        </div>
+                                                                                                            }
+                                                    }
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+
+                </div>
+            </div>
+        }
+    }
+
+</div>
+@if (Model != null && Model.Settings.Any())
+{
+    <button class="shortcut-button bg-cyan fg-white bg-active-darkBlue" id="btnSaveSettings" onclick="SaveSettings()">
+        <span class="icon mif-floppy-disk"></span>
+        <span class="title">Save</span>
+    </button>
+    <button class="shortcut-button bg-cyan fg-white bg-active-darkBlue" id="btnRefreshSettings" onclick="RefreshSettings()">
+        <span class="icon mif-loop2"></span>
+        <span class="title">Reload</span>
+    </button>
+    <button class="shortcut-button bg-cyan fg-white bg-active-darkBlue" id="btnLogoff" onclick="location.href = '@Url.Action("LogOff", "Auth")'">
+        <span class="icon mif-exit"></span>
+        <span class="title">Logoff</span>
+    </button>
+    
+}
+<script type="text/javascript">
+    function SaveSettings() {
+        var settings = [];
+        $(".DataProp").each(function(index, item) {
+            var inputType = $(item).attr('type');
+            var val = $(item).val();
+            if (inputType === 'checkbox') {
+                val = $(item).prop('checked');
+            }
+            var panel = $(item).parents('.panel');
+            settings.push({ Id: $(item).attr('id'), Value: val, Collapsed: $(panel).hasClass("collapsed") });
+        });
+       
+        $.ajax({
+            type: 'post',
+            cache: false,
+            async: true,
+            data: { 'settingsString': JSON.stringify(settings) },
+            url: '@Url.Action("SaveSettings", "Settings")',
+            success: function() {
+                window.location.href = '/Settings';
+            }
+        });
+    }
+    function RefreshSettings() {
+        $.ajax({
+            type: 'post',
+            cache: false,
+            async: true,
+            url: '@Url.Action("RefreshSettings", "Settings")',
+            success: function() {
+                window.location.href = '/Settings';
+            }
+        });
+    }
+    function panelCollapseExpand(panel) {
+        var settings = [];
+        $(".DataProp").each(function(index, item) {
+            var inputType = $(item).attr('type');
+            var val = $(item).val();
+            if (inputType === 'checkbox') {
+                val = $(item).prop('checked');
+            }
+            var panel = $(item).parents('.panel');
+            settings.push({ Id: $(item).attr('id'), Value: val, Collapsed: $(panel).hasClass("collapsed") });
+        });
+       
+        $.ajax({
+            type: 'post',
+            cache: false,
+            async: true,
+            data: { 'settingsString': JSON.stringify(settings) },
+            url: '@Url.Action("SaveCollapsed", "Settings")',
+            success: function() {
+                
+            }
+        });
+    }
+</script>
+<style>
+    .tabcontrol > .tabs li a { color: #2086bf !important }
+
+    .tabcontrol > .tabs li.active a {
+        background-color: #1ba1e2;
+        color: #ffffff !important;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+    }
+</style>

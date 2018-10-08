@@ -1,0 +1,100 @@
+﻿@using Infor.Model.Helpers
+@using Infor.Model.SchedulerServices
+@model inReachWebRebuild.ViewModels.ExportJobViewModel
+<div class="tile-small">
+    <div class="tile-content iconic bg-cyan fg-green">
+        <span class="icon mif-plus" onclick="AddNewSchedule(event);"></span>
+    </div>
+</div>
+@if (Model.EJobs != null && Model.EJobs.Any())
+{
+    foreach (var j in Model.EJobs)
+    {
+
+        <ul id="@($"ctxmnu{j.Id}")">
+            <li>
+                <button class="shortcut-button bg-crimson fg-green" id="@($"deleteJobButtonCTX{j.Id}")" onclick="DeleteExportJob(event, '@j.Id');">
+                    <span class="icon mif-bin"></span>
+                    <span class="title" id="deleteTitle"></span>
+                </button>
+            </li>
+            <li>
+                <button class="shortcut-button bg-cyan fg-white" id="@($"CloneJobButtonCTX{j.Id}")" onclick="CloneExportJob(event, '@j.Id')">
+                    <span class="icon mif-stack"></span>
+                    <span class="title" id="cloneTitle"></span>
+                </button>
+            </li>
+        </ul>
+
+        <div class="tile-wide" id="@($"jobTile{j.Id}")" onclick="ShowReportConfigCharm(event, '@j.Id');" style="background: #EDFFFF;" data-title="@j.Name" data-jobId="@j.Id">
+            <div class="tile-content" style="padding-left: 5px;">
+                
+                <span>
+                    <b>@j.Name</b>
+                </span>
+                <br/>
+                <span>
+                    <b>To run: </b>@j.ScheduleType.ToString()</span><br/>
+                <span>
+                    <b>Last run: </b> @($"{j.LastRunToCompletion:dd/MM hh:mm:ss tt} and took {j.LastTimeTaken.ToUserFriendlyString()}")
+                </span><br/>
+                <span>
+                    <b>Next run: </b>@($"{(j.NextRun != null ? $"{j.NextRun:dd/MM hh:mm:ss tt}" : "N/A")}")
+                </span><br/>
+                @switch (j.ScheduleType.Status) {
+                    case JobStatus.None:
+                        <button class="shortcut-button rounded bg-lighterBlue fg-emerald" onclick="ExecuteExportJob(event, '@j.Name');">
+                            <span class="icon mif-play"></span>
+                            <span class="title">@j.ScheduleType.Status</span>
+                        </button>
+                        break;
+                    case JobStatus.Disabled:
+                        <button class="shortcut-button rounded bg-lighterBlue fg-crimson" onclick="ExecuteExportJob(event, '@j.Name');">
+                            <span class="icon mif-play"></span>
+                            <span class="title">@j.ScheduleType.Status</span>
+                        </button>
+                        break;
+                    case JobStatus.Pending:
+                        <button class="shortcut-button rounded bg-lighterBlue fg-emerald" onclick="ExecuteExportJob(event, '@j.Name');">
+                            <span class="icon mif-play"></span>
+                            <span class="title">@j.ScheduleType.Status</span>
+                        </button>
+                        break;
+                    case JobStatus.Executing:
+                        <button class="shortcut-button rounded bg-lightGreen fg-grayDarker">
+                            <span class="icon mif-steps"></span>
+                            <span class="title">@j.ScheduleType.Status</span>
+                        </button>
+                        <button class="shortcut-button rounded bg-crimson fg-green" onclick="CancelExportJobExecution(event, '@j.Id');">
+                            <span class="icon mif-cancel"></span>
+                            <span class="title">Cancel</span>
+                        </button>
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+
+
+            </div>
+        </div>
+    }
+}
+
+
+
+@*<div data-role="dialog" id="JobContextMenu" class="padding20 dialog" data-close-button="true" style="height: auto; left: 313px; top: 370px; visibility: hidden; width: auto;">
+    <p>
+        <button class="shortcut-button bg-crimson fg-green" id="deleteJobButtonCTX">
+            <span class="icon mif-bin"></span>
+            <span class="title" id="deleteTitle"></span>
+        </button>
+        <button class="shortcut-button bg-cyan fg-white" id="CloneJobButtonCTX">
+            <span class="icon mif-stack"></span>
+            <span class="title" id="cloneTitle"></span>
+        </button>
+    </p>
+    <span class="dialog-close-button"></span>
+</div>*@
+<script type="text/javascript">
+  
+</script>

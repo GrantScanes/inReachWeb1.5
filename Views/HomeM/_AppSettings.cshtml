@@ -1,0 +1,67 @@
+﻿@using System.Web.Script.Serialization
+@using Infor.Model
+@using Infor.Model.ApplicationServices
+@using Infor.Model.Enums
+@using Infor.Model.SchedulerServices
+@model inReachWebRebuild.ViewModels.SettingsViewModel
+@{
+    var serializer = new JavaScriptSerializer();
+
+}
+@{
+    var sections = Model.Settings;
+    var distinctSections = Model.Settings.GroupBy(setting => setting.Section).Select(group => group.First());
+
+    foreach (var distinctSection in distinctSections)
+    {
+        <div class="row" style="width: 100%">
+            <div class="panel" data-role="panel">
+                
+                <div class="heading">
+                    <span class="title">@distinctSection.Section</span>
+                </div>
+                <div class="content">
+                    @foreach (var section in sections.Where(s => s.Section == distinctSection.Section))
+                    {
+                        var span = "auto-size";
+                        if (section.DisplayColumnSpan > 1)
+                        {
+                            span = string.Format("size{0}", section.DisplayColumnSpan);
+                        }
+                        <div class="cell @span">
+                            @switch (section.Type)
+                            {
+                                case InforSettingTypes.Number:
+                                    break;
+                                case InforSettingTypes.Text:
+                                    break;
+                                case InforSettingTypes.Date:
+                                    break;
+                                case InforSettingTypes.DateTime:
+                                    break;
+                                case InforSettingTypes.Lookup:
+                                    <span class="caption">@section.Title  </span><br />
+                                    <div class="input-control select">
+                                        <select id="@section.Key" class="DataProp">
+                                            @foreach (var o in section.OptionValues)
+                                            {
+                                                <option value="@o" @(section.Value != null ? (TimeUoM)Enum.Parse(typeof(TimeUoM), o, true) == (TimeUoM)Enum.Parse(typeof(TimeUoM), section.Value.ToString(), true) ? "selected" : "" : "" )>@o</option>
+                                            }
+
+                                        </select>
+                                    </div>
+                                    break;
+                                case InforSettingTypes.Boolean:
+                                    break;
+                                default:
+                                    throw new ArgumentOutOfRangeException();
+                            }
+
+
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+}

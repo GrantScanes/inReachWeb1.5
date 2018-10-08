@@ -1,0 +1,807 @@
+﻿@{
+    ViewBag.Title = "inReach Web";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div data-role="charm" data-position="right" id="ModuleToolBoxCharm" style="min-width: 30%; z-index: 30000;" class="bg-grayDark" data-outside="false">
+    <div data-role="preloader" data-type="cycle" data-style="color" id="ModuleToolBoxCharmPL" style="display: none; height: 100%; width: 100%;"></div>
+    <div id="ModuleToolBoxPartial" style="height: 100%; margin-top: 30px;"></div>
+</div>
+<div data-role="charm" data-position="right" id="ModuleInputCharm" style="width: 50%; z-index: 30000;" class="bg-grayDark" data-outside="false" data-on-hide="CloseModuleCharm()">
+    <div data-role="preloader" data-type="cycle" data-style="color" id="ModuleInputCharmPL" style="display: none; height: 100%; width: 100%;"></div>
+    <div id="ModuleInputPartial" style="height: 100%; margin-top: 30px; overflow: auto"></div>
+</div>
+<div class="tabcontrol" data-role="tabcontrol" style="height: 86%" id="JobDetailsTabs">
+    <ul class="tabs bg-grayDark">
+        <li>
+            <a href="#Details">Details</a>
+        </li>
+        <li>
+            <a href="#Schedule">Schedule</a>
+        </li>
+        <li>
+            <a href="#Design">Design</a>
+        </li>
+        <li>
+            <a href="#History">History</a>
+        </li>
+    </ul>
+    <div class="frames bg-grayDark fg-white" style="height: 100%">
+        <div class="frame bg-grayDark fg-white " id="Schedule" style="background: #e8f1f4; color: #1d1d1d; height: 88%">
+            <div data-role="preloader" data-type="cycle" data-style="color" id="SchedulePartialViewPL" style="background: #e8f1f4; color: #1d1d1d; display: none; height: 100%; width: 100%;"></div>
+            <div id="SchedulePartialView"></div>
+        </div>
+        <div class="frame bg-grayDark fg-white " id="Design" style="background: #e8f1f4; color: #1d1d1d; height: 88%">
+            <button class="button cycle-button" style="float: right; z-index: 1000" onclick="ShowToolBoxClick()">
+                <span class="mif-tools"></span>
+            </button>
+            <div id="jobChart" style="height: 100%; width: 98%" class="noSwipe"></div>
+        </div>
+        <div class="frame bg-grayDark fg-white " id="Details" style="background: #e8f1f4; color: #1d1d1d; height: 88%">
+            <span class="caption">Name</span>
+            <div class="cell size10">
+                <div class="input-control text" style="width: 30%">
+                    <input type="text" placeholder="Name" id="txtName" class="k-textbox">
+                </div>
+            </div>
+        </div>
+        <div class="frame bg-grayDark fg-white " id="History" style="background: #e8f1f4; color: #1d1d1d; height: 88%">
+            <div id="HistoryPartialView" style="height: 100%; overflow: auto"></div>
+        </div>
+    </div>
+</div>
+<script type="text/x-kendo-template" id="LocationTemplate">
+    <span class="k-state-default" style="background-image: url('#: data.UserImagePath #')"></span>
+    <span class="k-state-default">
+        <h3>#: data.Name #</h3>
+        <p>#: data.Position #</p>
+        <p>#: data.Email #</p>
+    </span>
+</script>
+<script type="text/javascript">
+    function ValidateModule() {
+        var module = $("#ModuleContainer").attr("data-module");
+        var mod = jQuery.parseJSON(module);
+        var jobChart = $('#jobChart').data('inforOrgChart');
+        var data = jobChart.getData();
+        saveModProperties(null, mod);
+        _.each(mod.Modules,
+            function(p) {
+                saveModProperties(mod, p);
+            });
+        var orgmod = _.find(data, function (m) { return m.Id === mod.Id; });
+        $.ajax({
+            url: '@Url.Action("ValidateModulePartialViewResult", "Jobs")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { module: JSON.stringify(orgmod),   modules: JSON.stringify(data) },
+            success: function(result) {
+                $("#ModuleInputCharmPL").hide();
+                var partial = document.getElementById("ValidationPartialView");
+                partial.innerHTML = result;
+                module = $("#ValidationModuleContainer").attr("data-validationmodule");
+                mod = jQuery.parseJSON(module);
+                orgmod.FriendlyString = mod.FriendlyString;
+                orgmod.ValidationStatus = mod.ValidationStatus;
+                jobChart.reset();
+            }
+        });
+
+       
+    }
+    function CloseModuleCharm() {
+        var module = $("#ModuleContainer").attr("data-module");
+        var mod = jQuery.parseJSON(module);
+        var jobChart = $('#jobChart').data('inforOrgChart');
+        var data = jobChart.getData();
+        saveModProperties(null, mod);
+        _.each(mod.Modules,
+            function(p) {
+                saveModProperties(mod, p);
+            });
+        var orgmod = _.find(data, function(m) { return m.Id === mod.Id; });
+        $.ajax({
+            url: '@Url.Action("ModulesInputFromModule", "Jobs")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            dataType: 'JSONP',
+            data: { module: JSON.stringify(orgmod) },
+            success: function(result) {
+                orgmod.FriendlyString = result.FriendlyString;
+                jobChart.reset();
+                CreateDropsForModules();
+            }
+        });
+    }
+    function CreateDropsForModules() {
+        $("#jobChartorgchart").find(".tile-wide").kendoDropTarget({
+            group: "dragModule",
+            drop: DropModuleOnModuleBottom
+        });
+    }
+    function findOrgMod(mod, id) {
+        var modToFind = _.find(mod.Modules, function(m) { return m.Id === id; });
+        if (modToFind === null) {
+            _.each(mod.Modules,
+                function(mm) {
+                    findOrgMod(mm, id);
+                });
+        }
+        return modToFind;
+    }
+    function saveModProperties(modInOrg, mod) {
+        var jobChart = $('#jobChart').data('inforOrgChart');
+        var data = jobChart.getData();
+        var orgmod;
+        if (modInOrg === null) {
+            orgmod = _.find(data, function(m) { return m.Id === mod.Id; });
+        } else {
+            orgmod = _.find(data, function(m) { return m.Id === modInOrg.Id; });
+            var mm = findOrgMod(orgmod, mod.Id);
+            orgmod = mm;
+        }
+        orgmod.ParentIds = [];
+        orgmod.PropertyInputModules = [];
+        _.each(mod.ExpectedInputTypes,
+            function(it) {
+                var val = $("#" + it).val();
+                if (val.substring(0, 3) !== "-1_") {
+                    orgmod.ParentIds.push(val);
+                    orgmod.PropertyInputModules.push(_.find(data, function(par) { return par.Id === val }));
+                } else {
+                    $.ajax({
+                        url: '@Url.Action("NewModuleFromType", "Jobs")',
+                        type: 'POST',
+                        cache: false,
+                        async: true,
+                        dataType: 'JSONP',
+                        data: { type: val.substring(3, val.length) },
+                        success: function(result) {
+                            var newmod = result;
+                            var expectedInputs = newmod.ExpectedInputTypes;
+                            var data = jobChart.getData();
+                            newmod.Id = guid();
+                            newmod.PreceedingModule = _.find(data, function(par) { return par.Id === mod.Id }).Id;
+                            orgmod.ParentIds.push(newmod.Id);
+                            jobChart.addNodeAbove(newmod, _.find(data, function(par) { return par.Id === mod.Id }).ModuleId);
+                            CreateDropsForModules();
+                            var charm = document.getElementById("ModuleInputCharm");
+                            showMetroCharm(charm);
+                            $("#ModuleInputCharmPL").show();
+                            $.ajax({
+                                url: '@Url.Action("ModulesInputPartialViewResult", "Jobs")',
+                                type: 'POST',
+                                cache: false,
+                                async: true,
+                                data: { module: JSON.stringify(newmod), expectedInputType: expectedInputs.join(", "), modules: JSON.stringify(data) },
+                                success: function(result) {
+                                    $("#ModuleInputCharmPL").hide();
+                                    var partial = document.getElementById("ModuleInputPartial");
+                                    partial.innerHTML = result;
+                                    var module = $("#ModuleContainer").attr("data-module");
+                                    var mod = jQuery.parseJSON(module);
+                                    initView(mod);
+                                    $("#ModuleInputPartial")
+                                        .kendoDraggable({
+                                            group: "dragModule",
+                                            filter: ".tile",
+                                            hint: function(element) { //create a UI hint, the `element` argument is the dragged item
+                                                return element.clone()
+                                                    .css({
+                                                        "opacity": 0.6,
+                                                        "background-color": "#0cf"
+                                                    });
+                                            }
+                                        });
+                                    CreateRadControls();
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        _.each(mod.Properties,
+            function(p) {
+                var modProp = _.find(orgmod.Properties, function(prop) { return prop.Key === p.Key; });
+                if ($("#" + p.Key).attr("data-role") === "combobox") {
+                    modProp.Value = $("#" + p.Key).data('kendoComboBox').value();
+                } else if ($("#" + p.Key).hasClass("AddedFields")) {
+                    modProp.Value = [];
+                    $.each($("#addedProps").find(".list"),
+                        function(k, v) {
+                            var prop = jQuery.parseJSON(v.dataset.prop);
+                            modProp.Value.push(prop);
+                        });
+                } else {
+                    var inputType = $("#" + p.Key).attr('type');
+                    var val = $("#" + p.Key).val();
+                    if (inputType === 'checkbox') {
+                        val = $("#" + p.Key).prop('checked');
+                    }
+                    modProp.Value = val;
+                }
+            });
+    }
+    function GetView(name, id) {
+        $("#SchedulePartialViewPL").show();
+        $.ajax({
+            url: '@Url.Action("GetScheduleConfig", "Reports")',
+            type: 'post',
+            cache: false,
+            async: true,
+            data: { uom: name, 'id': id },
+            success: function(result) {
+                var partial = document.getElementById("SchedulePartialView");
+                partial.innerHTML = result;
+                $("#SchedulePartialViewPL").hide();
+                CreateRadControls();
+            }
+        });
+    }
+    function ShowToolBoxClick() {
+        var charm = document.getElementById("ModuleToolBoxCharm");
+        showMetroCharm(charm);
+        $("#ModuleToolBoxCharmPL").show();
+        $.ajax({
+            url: '@Url.Action("ModulesToolBoxPartialViewResult", "Jobs")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: {},
+            success: function(result) {
+                $("#ModuleToolBoxCharmPL").hide();
+                var partial = document.getElementById("ModuleToolBoxPartial");
+                partial.innerHTML = result;
+                $("#ModuleToolBoxPartial")
+                    .kendoDraggable({
+                        group: "dragModule",
+                        filter: ".tile",
+                        hint: function(element) { //create a UI hint, the `element` argument is the dragged item
+                            return element.clone()
+                                .css({
+                                    "opacity": 0.6,
+                                    "background-color": "#0cf"
+                                });
+                        }
+                    });
+            }
+        });
+    }
+    $("#jobChart")
+        .kendoDropTarget({
+            group: "dragModule",
+            drop: dropModule
+        });
+    function CreateRadControls() {
+        $(".Date").kendoDatePicker({
+            format: "dd/MM/yyyy"
+        });
+        $.each($(".numerictb"),
+            function(index, item) {
+                if (!$(item).hasClass("k-input")) {
+                    $(item).kendoNumericTextBox({ decimals: 0, format: "n0" });
+                }
+            });
+        $(".combo").kendoDropDownList({});
+        $(".kcombo").kendoComboBox({
+            filter: "contains",
+            autoWidth: true,
+            placeholder: "Select..."
+            
+        });
+        $.each($(".time"),
+            function(index, item) {
+                var tp = $(item).kendoTimePicker({
+                    interval: 10
+                }).data("kendoTimePicker");;
+                tp.min("12:00 AM");
+                tp.max("12:00 AM");
+                $("#" + $(item).attr('id') + "_timeview").data('incharm', 'true');
+                $("#" + $(item).attr('id') + "-timeview").data('incharm', 'true');
+            });
+        $("#ScheduleFrequency").kendoDropDownList({});
+    }
+    $(document).ready(function() {
+        $("#jobChart").inforOrgChart({
+            id: "jobChart",
+            data: {},
+            nodeClick: "moduleClick",
+            nodeTitleField: "Title",
+            nodeTitleImage: "",
+            nodeLine1Field: "Description",
+            nodeLine1Title: "",
+            nodeLine2Field: "FriendlyString",
+            nodeLine2Title: "",
+            nodeLine3Field: "",
+            nodeLine3Title: "",
+            allowMultiSelected: false,
+            idField: "ModuleId",
+            parentIdField: "ParentModuleId",
+            parentId2Field: "ParentIds",
+            ShowZoomButtons: true,
+            renderNode: "renderNodeEventHandler",
+            allowRemoveNode: true
+        });
+        $.ajax({
+            url: '@Url.Action("GetScheduleConfig", "Reports")',
+            type: 'post',
+            cache: false,
+            async: true,
+            data: { uom: null, 'id': null },
+            success: function(result) {
+                var partial = document.getElementById("SchedulePartialView");
+                partial.innerHTML = result;
+                CreateRadControls();
+            }
+        });
+
+        @*$.ajax({
+            url: '@Url.Action("GetHistoryPartialViewResult", "Reports")',
+            type: 'post',
+            cache: false,
+            async: true,
+            data: { id: data["Id"] },
+            success: function(result) {
+                var partial = document.getElementById("HistoryPartialView");
+                partial.innerHTML = result;
+            }
+        });*@
+
+    });
+    function renderNodeEventHandler(tile, item) {
+        
+
+        var status = item.ValidationStatus;
+        var colour = "#EDFFFF";;
+
+        switch (status) {
+            //NotValidated
+        case 0:
+                colour = "#EDFFFF";
+            break;
+        //NotValidated
+        case 1:
+            colour = "amber";
+            break;
+        //InValid
+        case 2:
+            colour = "red";
+            break;
+        //Valid
+        case 3:
+            colour = "green";
+            break;
+        }
+        $(tile)[0].style.backgroundColor = colour;
+        $(tile)[0].style.color = "black";
+
+    }
+    function moduleClick(item) {
+        var expectedInputs = item.ExpectedInputTypes;
+        var charm = document.getElementById("ModuleInputCharm");
+        showMetroCharm(charm);
+        var jobChart = $('#jobChart').data('inforOrgChart');
+        var data = jobChart.getData();
+        $("#ModuleInputCharmPL").show();
+        $.ajax({
+            url: '@Url.Action("ModulesInputPartialViewResult", "Jobs")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { module: JSON.stringify(item), expectedInputType: expectedInputs.join(", "), modules: JSON.stringify(data) },
+            success: function(result) {
+                $("#ModuleInputCharmPL").hide();
+                var partial = document.getElementById("ModuleInputPartial");
+                partial.innerHTML = result;
+                var module = $("#ModuleContainer").attr("data-module");
+                var mod = jQuery.parseJSON(module);
+                initView(mod);
+                CreateRadControls();
+            }
+        });
+        $("#ModuleInputCharmPL").hide();
+    }
+    function guid() {
+        function _p8(s) {
+            var p = (Math.random().toString(16) + "000000000").substr(2, 8);
+            return s ? "-" + p.substr(0, 4) + "-" + p.substr(4, 4) : p;
+        }
+        return _p8() + _p8(true) + _p8(true) + _p8();
+    }
+    function DropModuleOnModuleBottom(e) {
+        var jobChart = $('#jobChart').data('inforOrgChart');
+        var d = (e.draggable.hint.position().top) - 75;
+        var t = (e.dropTarget.position().top) + (75);
+        var elm = e.draggable.currentTarget;
+        var drop = e.dropTarget;
+        var parentId = $(drop)["0"].dataset.dataid;
+        var m = $(elm)["0"].dataset.module;
+        var mod = jQuery.parseJSON(m);
+        var expectedInputs = mod.ExpectedInputTypes;
+        var data = jobChart.getData();
+        //_.each(data,
+        //    function(d) {
+        //        expectedInputs.removeValue(d.ExpectedReturnType);
+        //    });
+        mod.Id = guid();
+        mod.PreceedingModule = _.find(data, function(par) { return par.ModuleId === parseInt(parentId) }).Id;
+        //mod.Parent2 = "2;1;6";
+        if ((d) >= (t)) {
+            jobChart.addNodeBelow(mod, parentId);
+        } else {
+            jobChart.addNodeAbove(mod, parentId);
+        }
+        CreateDropsForModules();
+        var charm = document.getElementById("ModuleInputCharm");
+        showMetroCharm(charm);
+        $("#ModuleInputCharmPL").show();
+        $.ajax({
+            url: '@Url.Action("ModulesInputPartialViewResult", "Jobs")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { module: JSON.stringify(mod), expectedInputType: expectedInputs.join(", "), modules: JSON.stringify(data) },
+            success: function(result) {
+                $("#ModuleInputCharmPL").hide();
+                var partial = document.getElementById("ModuleInputPartial");
+                partial.innerHTML = result;
+                var module = $("#ModuleContainer").attr("data-module");
+                var mod = jQuery.parseJSON(module);
+                initView(mod);
+                $("#ModuleInputPartial")
+                    .kendoDraggable({
+                        group: "dragModule",
+                        filter: ".tile",
+                        hint: function(element) { //create a UI hint, the `element` argument is the dragged item
+                            return element.clone()
+                                .css({
+                                    "opacity": 0.6,
+                                    "background-color": "#0cf"
+                                });
+                        }
+                    });
+                CreateRadControls();
+            }
+        });
+    }
+    function initView(mod) {
+        var templateContent = $("#LocationTemplate").html();
+        var template = kendo.template(templateContent);
+        _.each(mod.Modules,
+            function(d) {
+                initView(d);
+            });
+        _.each(mod.Properties,
+            function(prop) {
+                if (prop.Key === "UserUri") {
+                    $("#UserUri").kendoComboBox({
+                        filter: "contains",
+                        autoWidth: true,
+                        dataTextField: "Name",
+                        dataValueField: "UserId",
+                        placeholder: "Select...",
+                        template: template,
+                        dataSource: {
+                            transport: {
+                                read: {
+                                    dataType: "jsonp",
+                                    url: '@Url.Action("GetLocations", "Users")'
+                                }
+                            }
+                        },
+                        height: 400
+                    });
+                    var combobox = $("#UserUri").data("kendoComboBox");
+                    combobox.value(prop.ValueAsString);
+                }
+                if (prop.Key === "Fields") {
+                    $("#AvailableFields").kendoTreeView({
+                        dataTextField: "Caption",
+                        dataSource: {
+                            transport: {
+                                read: {
+                                    url: '@Url.Action("GetInforPropsTreeView", "Reports")',
+                                    dataType: "json"
+                                }
+                            },
+                            schema: {
+                                model: {
+                                    id: "Id",
+                                    hasChildren: "HasChildren"
+                                }
+                            }
+                        },
+                        dragAndDrop: true,
+                        drop: onDrop
+                    });
+                    $("#ModuleRemovePropertyDropArea")
+                        .kendoDropTarget({
+                            group: "AddedPropDrag",
+                            drop: RemovePropDragEnd
+                        });
+                    var list = document.getElementById('addedProps');
+                    var panel = document.getElementById("addedProps");
+                    while (panel.firstChild) {
+                        panel.removeChild(panel.firstChild);
+                    }
+                    if (prop.ValueAsString !== "") {
+                        $.each(jQuery.parseJSON(prop.ValueAsString),
+                            function(k, v) {
+                                l = $("<div/>").addClass("list").appendTo(list);
+                                s = $("<span/>").addClass("list-title").appendTo(l);
+                                l.attr('data-prop', JSON.stringify(v));
+                                s.html(v["FriendlyLabel"]);
+                                console.log(v);
+                                l.kendoDraggable({
+                                    group: "AddedPropDrag",
+                                    dragend: AddedPropDragEnd,
+                                    hint: function(element) {
+                                        return element.clone();
+                                    }
+                                });
+                            });
+                    }
+                }
+            });
+    }
+    function dropModule(e) {
+        var elm = e.draggable.currentTarget;
+        var m = $(elm)["0"].dataset.module;
+        var mod = jQuery.parseJSON(m);
+        var expectedInputs = mod.ExpectedInputTypes;
+        var jobChart = $('#jobChart').data('inforOrgChart');
+        var data = jobChart.getData();
+        //_.each(data,
+        //    function(d) {
+        //        expectedInputs.removeValue(d.ExpectedReturnType);
+        //    });
+        mod.Id = guid();
+        mod.PreceedingModule = null;
+        jobChart.addNode(mod);
+        CreateDropsForModules();
+        var charm = document.getElementById("ModuleInputCharm");
+        showMetroCharm(charm);
+        $("#ModuleInputCharmPL").show();
+        $.ajax({
+            url: '@Url.Action("ModulesInputPartialViewResult", "Jobs")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { module: JSON.stringify(mod), expectedInputType: expectedInputs.join(", "), modules: JSON.stringify(data) },
+            success: function(result) {
+                $("#ModuleInputCharmPL").hide();
+                var partial = document.getElementById("ModuleInputPartial");
+                partial.innerHTML = result;
+                var module = $("#ModuleContainer").attr("data-module");
+                var mod = jQuery.parseJSON(module);
+                initView(mod);
+                $("#ModuleInputPartial")
+                    .kendoDraggable({
+                        group: "dragModule",
+                        filter: ".tile",
+                        hint: function(element) { //create a UI hint, the `element` argument is the dragged item
+                            return element.clone()
+                                .css({
+                                    "opacity": 0.6,
+                                    "background-color": "#0cf"
+                                });
+                        }
+                    });
+                CreateRadControls();
+            }
+        });
+    }
+    (function($) {
+        $.fn.physicallyClosest = function() {
+            var $this = this,
+                selector = "body *",
+                options;
+            if (typeof arguments[0] === "string") {
+                selector = arguments[0];
+            } else if (typeof arguments[0] === "object") {
+                options = arguments[0];
+            }
+            if (typeof arguments[1] === "object") {
+                options = arguments[1];
+            }
+            var settings = {
+                'excludeChildren': false,
+                'excludeDescendants': false,
+                'reverse': false
+            };
+            if (options) {
+                $.extend(settings, options);
+            }
+            var selectedY = this.offset().top + (this.height() / 2),
+                selectedX = this.offset().left + (this.width() / 2),
+                closestFound;
+            $(selector).each(function() {
+                if (settings.excludeChildren) {
+                    if ($(this).parent().get(0) == $this.get(0)) {
+                        return 1;
+                    }
+                }
+                if (settings.excludeDescendants) {
+                    var isDescendant = false;
+                    $(this).parents().each(function() {
+                        if ($(this).get(0) == $this.get(0)) {
+                            isDescendant = true;
+                            return false; //Break
+                        }
+                    });
+                    if (isDescendant) {
+                        return 1; //Continue
+                    }
+                }
+                var currentY = $(this).offset().top + ($(this).height() / 2),
+                    currentX = $(this).offset().left + ($(this).width() / 2),
+                    yDiff = currentY - selectedY,
+                    xDiff = currentX - selectedX,
+                    c = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
+                if (closestFound) {
+                    if (!settings.reverse && c != 0 && c < closestFound.distance) {
+                        closestFound = { element: this, distance: c };
+                    } else if (settings.reverse && c != 0 && c > closestFound.distance) {
+                        closestFound = { element: this, distance: c };
+                    }
+                } else {
+                    closestFound = { element: this, distance: c };
+                }
+            });
+            if (closestFound === undefined) {
+                return false;
+            }
+            return $(closestFound.element);
+        };
+    })(jQuery);
+    function RemovePropDragEnd(e) {
+        e.draggable.destroy();
+        e.draggable.element.remove();
+    }
+    function AddedPropDragEnd(e) {
+        console.log('here');
+        var dragged = e.currentTarget["0"];
+        if (e.target) {
+            var parent = e.currentTarget["0"].parentElement;
+            if (parent.id === "addedProps") {
+                var prop = dragged.dataset.prop;
+                var p = jQuery.parseJSON(prop);
+                var bef = $(e.sender.hint).physicallyClosest(".list");
+                var l = $("<div/>").addClass("list");
+                var s = $("<span/>").addClass("list-title").appendTo(l);
+                l.attr('data-prop', JSON.stringify(p));
+                l.kendoDraggable({
+                    group: "AddedPropDrag",
+                    dragend: AddedPropDragEnd,
+                    hint: function(element) {
+                        return element.clone();
+                    }
+                });
+                s.html(p["FriendlyLabel"]);
+                if (bef === false) {
+                    l.appendTo(list);
+                } else {
+                    bef.after(l);
+                }
+                dragged.remove();
+            }
+        }
+    }
+    function onDrop(e) {
+        var tree = $('#AvailableFields').data('kendoTreeView');
+        var dataItem = tree.dataItem(e.sourceNode);
+        var p = dataItem; //jQuery.parseJSON(dataItem);
+        var list = document.getElementById('addedProps');
+        var bef = $(e.sender.dragging.dropHint["0"]).physicallyClosest(".list");
+        if (bef["0"] === undefined || bef["0"].parentElement.id !== 'addedProps') {
+            bef = false;
+        }
+        var l = $("<div/>").addClass("list");
+        var s = $("<span/>").addClass("list-title").appendTo(l);
+        l.attr('data-prop', JSON.stringify(p));
+        s.html(p["FriendlyLabel"]);
+        if (bef === false) {
+            l.appendTo(list);
+        } else {
+            bef.after(l);
+        }
+        l.kendoDraggable({
+            group: "AddedPropDrag",
+            dragend: AddedPropDragEnd,
+            hint: function(element) {
+                return element.clone();
+            }
+        });
+        e.preventDefault();
+    }
+</script>
+<style>
+    .tabcontrol > .tabs li a { color: #2086bf !important }
+
+    .tabcontrol > .tabs li.active a {
+        background-color: #1ba1e2;
+        color: #ffffff !important;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .page {
+        background: white;
+        box-shadow: 0 0 0.5cm rgba(0, 0, 0, 0.5);
+        display: block;
+        margin: 0 auto;
+        margin-bottom: 0.5cm;
+    }
+
+    .A4 {
+        height: 29.7cm;
+        width: 21cm;
+    }
+
+    .svg-container {
+        height: 100%;
+        left: 0;
+        position: absolute;
+        top: 0;
+        width: 100%;
+    }
+
+    rect.btn {
+        fill: #fff;
+        fill-opacity: 0;
+        stroke: #fff;
+        stroke-opacity: 0;
+    }
+
+    .k-treeview .k-item { color: black !important; }
+
+
+    #UserUri-list .k-item {
+        line-height: 1em;
+        min-width: 300px;
+    }
+
+    /* Material Theme padding adjustment*/
+
+    .k-material #UserUri-list .k-item,
+    .k-material #UserUri-list .k-item.k-state-hover,
+    .k-materialblack #UserUri-list .k-item,
+    .k-materialblack #UserUri-list .k-item.k-state-hover {
+        border-left: 0;
+        padding-left: 5px;
+    }
+
+    #UserUri-list .k-item > span {
+        -moz-box-sizing: border-box;
+        -webkit-box-sizing: border-box;
+        box-sizing: border-box;
+        display: inline-block;
+        margin: 20px 10px 10px 5px;
+        vertical-align: top;
+    }
+
+    #UserUri-list .k-item > span:first-child {
+        -moz-box-shadow: inset 0 0 30px rgba(0, 0, 0, .3);
+        -webkit-box-shadow: inset 0 0 30px rgba(0, 0, 0, .3);
+        background-repeat: no-repeat;
+        background-size: 100%;
+        border-radius: 50%;
+        box-shadow: inset 0 0 30px rgba(0, 0, 0, .3);
+        height: 50px;
+        margin: 10px;
+        width: 50px;
+    }
+
+    #UserUri-list h3 {
+        font-size: 1.2em;
+        font-weight: normal;
+        margin: 0 0 1px 0;
+        padding: 0;
+    }
+
+    #UserUri-list p {
+        font-size: .8em;
+        margin: 0;
+        padding: 0;
+    }
+</style>

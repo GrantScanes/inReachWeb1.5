@@ -1,0 +1,165 @@
+@using inReachWebRebuild.Models
+@using inReachWebRebuild.ViewModels
+@model inReachWebRebuild.ViewModels.SearchResultsNodesViewModel
+@{
+    var appUserState = (AppUserState) ViewData["UserState"];
+}
+<input type="hidden" id="UserStateName" value="@appUserState.Name">
+@foreach (var rec in Model.Results) {
+    @Html.Partial("~/Views/Process/_ProcessTile.cshtml", new ProcessTileViewModel {Process = rec})
+    ;
+}
+
+
+
+ 
+
+<script type="text/javascript">
+    $(".carousel").kendoTouch({
+        filter: ".slide",
+        enableSwipe: true,
+        swipe: function(e) {
+
+            if (e.direction === 'right') {
+                $(e.sender.element["0"]).data('carousel').priorSlide();
+                e.preventDefault();
+            }
+            if (e.direction === 'left') {
+                $(e.sender.element["0"]).data('carousel').nextSlide();
+                e.preventDefault();
+            }
+        }
+    });
+
+    function PropertiesClick(event, uri) {
+        event.stopPropagation();
+        $("#PropertiesPartialPL").show();
+        var charm = document.getElementById("PropertiesCharm");
+        showMetroCharm(charm);
+        $.ajax({
+            url: '@Url.Action("GetPropertiesView", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { uri: uri },
+            success: function(result) {
+                var partial = document.getElementById("PropertiesPartial");
+                partial.innerHTML = result;
+                $("#PropertiesPartialPL").hide();
+            }
+        });
+    }
+    function NotesClick(event, uri, processUri) {
+        event.stopPropagation();
+        $("#NotesPartialPL").show();
+        var charm = document.getElementById("NotesCharm");
+        showMetroCharm(charm);
+        $.ajax({
+            url: '@Url.Action("GetNotesView", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { uri: uri, processUri: processUri },
+            success: function(result) {
+                var partial = document.getElementById("NotesPartial");
+                partial.innerHTML = result;
+                $("#NotesPartialPL").hide();
+            }
+        });
+    }
+
+
+
+    function ViewChanged(event, uri, checked) {
+        event.stopPropagation();
+        $("#ProcessPartialPL").show();
+        window.verticalView = checked;
+        $.ajax({
+            url: '@Url.Action("GetActionsView", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { uri: uri, vertical: window.verticalView },
+            success: function(result) {
+                var partial = document.getElementById("ActionsPartial");
+                partial.innerHTML = result;
+                $("#ActionsPartialPL").hide();
+            }
+        });
+        $.ajax({
+            type: 'post',
+            cache: false,
+            async: true,
+            data: { autoScroll: window.autoScrollCaro, autoClose: window.autoCloseCharm, vertical: checked },
+            url: '@Url.Action("SaveUserToggle", "HomeM")'
+        });
+    }
+
+    function AddNode(event, uri, parentUri, rootnode) {
+        var addbelow = -1;
+        var addabove = -1;
+        if (parentUri === 0) {
+            addbelow = uri;
+            $("#ProcessChart").data('inforOrgChart').addNodeBelow({ AllocationString: "New Task", Status: "-1", StatusImage: "/Content/Images/Apps/Process/BarAppPending.png" }, uri);
+            //orgchart.insertNode(uri, { AllocationString: "New Task", Statusint: "-1", StatusImage: "/Content/Images/Apps/Process/BarAppPending.png" });
+        } else {
+            $("#ProcessChart").data('inforOrgChart').addNodeAbove({ AllocationString: "New Task", Status: "-1", StatusImage: "/Content/Images/Apps/Process/BarAppPending.png" }, uri);
+
+            //orgchart.insertNode(parentUri, { AllocationString: "New Task", Statusint: "-1", StatusImage: "/Content/Images/Apps/Process/BarAppPending.png" }, -1);
+
+            //orgchart.updateNode(uri, -1, {
+            //    AllocationString: node[0].AllocationString,
+            //    Statusint: node[0].Statusint,
+            //    StatusImage: node[0].StatusImage,
+            //    StatusString: node[0].StatusString,
+            //    DateDueString: node[0].DateDueString,
+            //    DisplayNotesShort: node[0].DisplayNotesShort
+            //});
+            addabove = uri;
+        }
+
+         var charm = document.getElementById("LocationCharm");
+        showMetroCharm(charm);
+        $("#ReassignPartialPL").show();
+        $.ajax({
+            url: '@Url.Action("ReassPartialViewResult", "HomeM")',
+            type: 'POST',
+            cache: false,
+            async: true,
+            data: { id: uri, addBelow: addbelow, addAbove: addabove, ProcessUri: rootnode },
+            success: function(result) {
+                var partial = document.getElementById("ReassignPartial");
+                partial.innerHTML = result;
+                $("#ReassignPartialPL").hide();
+                //$("#LocationPicker").height($("#Body").height() * 0.25);
+                var templateContent = $("#LocationTemplate").html();
+                
+                $("#Processlocations").kendoComboBox({
+                    filter: "contains",
+                    autoWidth: true,
+                    dataTextField: "Name",
+                    dataValueField: "UserId",
+                    placeholder: "Select...",
+                    dataSource: {
+                        transport: {
+                            read: {
+                                dataType: "jsonp",
+                                url: '@Url.Action("GetLocations", "Users")'
+                            }
+                        }
+                    },
+                    height: 400
+                });
+
+                //var widget = $("#Processlocations").data("kendoComboBox");
+                
+                //window.stopScroll(widget.ul.parent());
+
+                window.CreateRadControls();
+            }
+        });
+
+    }
+
+
+</script>

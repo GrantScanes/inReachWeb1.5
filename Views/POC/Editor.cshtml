@@ -1,0 +1,107 @@
+﻿@using System.Web.Configuration
+@model inReachWebRebuild.Models.FileModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="form" style="height: 100%">
+    <div id="iframeEditor">
+    </div>
+</div>
+ 
+<script>
+     $(document).ready(function () {
+         alert("Boo");
+    });
+    alert("Boo");
+    var docEditor;
+    var fileName = '@Model.FileName';
+    var fileType = '@Path.GetExtension(Model.FileName).Trim('.').ToLower()';
+    console.log("file type us " + fileType);
+    var innerAlert = function(message) {
+        if (console && console.log)
+            console.log(message);
+    };
+    var onReady = function() {
+        innerAlert("Document editor ready");
+    };
+    var onDocumentStateChange = function(event) {
+        var title = document.title.replace(/\*$/g, "");
+        document.title = title + (event.data ? "*" : "");
+    };
+    var onRequestEditRights = function() {
+        location.href = location.href.replace(RegExp("action=view\&?", "i"), "");
+    };
+    var onError = function(event) {
+        if (event)
+            innerAlert(event.data);
+    };
+    var onOutdatedVersion = function(event) {
+        location.reload(true);
+    };
+    var сonnectEditor = function()
+        docEditor = new DocsAPI.DocEditor("iframeEditor",
+        {
+            width: "100%",
+            height: "100%",
+            type: '@Request["mode"] != "embedded" ? "desktop" : "embedded" ',
+            documentType: '@Model.DocumentType',
+            document: {
+                title: fileName,
+                url: '@Model.FileUri',
+                fileType: fileType,
+                key: '@Model.Key',
+                info: {
+                    author: "Me",
+                    created: '@DateTime.Now.ToShortDateString()'
+                },
+                permissions: {
+                    edit: '@DocManagerHelper.EditedExts.Contains(Path.GetExtension(Model.FileName))' === "True",
+                    download: true
+                }
+            },
+            editorConfig: {
+                mode: '@DocManagerHelper.EditedExts.Contains(Path.GetExtension(Model.FileName))' && '@Request["mode"]' !== "view" ? "edit" : "view",
+                lang: "en",
+                callbackUrl: '@Model.CallbackUrl',
+                user: {
+                    id: '@DocManagerHelper.CurUserHostAddress()',
+                    name: "John Smith"
+                },
+                embedded: {
+                    saveUrl: '@Model.FileUri',
+                    embedUrl: '@Model.FileUri',
+                    shareUrl: '@Model.FileUri',
+                    toolbarDocked: "top"
+                }
+            },
+            events: {
+                'onReady': onReady,
+                'onDocumentStateChange': onDocumentStateChange,
+                'onRequestEditRights': onRequestEditRights,
+                'onError': onError,
+                'onOutdatedVersion': onOutdatedVersion
+            }
+        });
+    };
+    if (window.addEventListener) {
+        window.addEventListener("load", сonnectEditor);
+    } else if (window.attachEvent) {
+        window.attachEvent("load", сonnectEditor);
+    }
+    function getXmlHttp() {
+        var xmlhttp;
+        try {
+            xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
+        } catch (e) {
+            try {
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            } catch (ex) {
+                xmlhttp = false;
+            }
+        }
+        if (!xmlhttp && typeof XMLHttpRequest != 'undefined') {
+            xmlhttp = new XMLHttpRequest();
+        }
+        return xmlhttp;
+    }
+</script>

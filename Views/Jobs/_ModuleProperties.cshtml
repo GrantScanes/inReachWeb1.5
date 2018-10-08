@@ -1,0 +1,168 @@
+﻿@using System.Web.Script.Serialization
+@using inReachWebRebuild.ViewModels
+@model inReachWebRebuild.ViewModels.ModulePropertiesViewModel
+@{ var serializer = new JavaScriptSerializer(); }
+@{
+    var mod = Model.Module;
+}
+
+
+    @if (Model.Module.Properties.Any()) {
+        var mods = Model.Module.Properties;
+        var distinctSectionsNoPageTab = Model.Module.Properties.Where(s => string.IsNullOrEmpty(s.PageTab) && string.IsNullOrEmpty(s.SectionTab)).GroupBy(setting => setting.Section).Select(group => group.First());
+        foreach (var distinctSection in distinctSectionsNoPageTab) {
+            var maxColumnsForSection = mods.Where(g => g.Section == distinctSection.Section && string.IsNullOrEmpty(g.PageTab) && string.IsNullOrEmpty(g.SectionTab)).Max(d => d.DisplayColumn);
+            <div class="row">
+                <div class="cell size12">
+                    <div class="panel" data-role="panel">
+                        <div class="heading">
+                            <span class="title">@distinctSection.Section</span>
+                        </div>
+                        <div class="content" style="height: 30%">
+                            @{
+                                var section = distinctSection;
+                                var distinctSettingsbyDisplayOrder = mods.Where(s => s.Section == section.Section && string.IsNullOrEmpty(section.PageTab) && string.IsNullOrEmpty(section.SectionTab)).GroupBy(gd => gd.DisplayOrder).Select(group => group.First());
+                                foreach (var displayOrder in distinctSettingsbyDisplayOrder.OrderBy(d => d.DisplayOrder)) {
+                                    <div class="row">
+                                        @{
+                                            var section1 = distinctSection;
+                                            var order = displayOrder;
+                                            var settingsForSectionAndDisplayOrder = mods.Where(s => s.Section == section1.Section && s.DisplayOrder == order.DisplayOrder && string.IsNullOrEmpty(s.PageTab) && string.IsNullOrEmpty(s.SectionTab));
+                                            foreach (var setting in settingsForSectionAndDisplayOrder.OrderBy(d => d.DisplayColumn)) {
+                                                @Html.Partial("_input", new InputViewModel {Property = setting, Module = mod })
+                                            }
+                                        }
+                                    </div>
+                                }
+                            }
+                            @if (Model.Module.Properties.Any(t => string.IsNullOrEmpty(t.PageTab) && !string.IsNullOrEmpty(t.SectionTab))) {
+                                var sectionTabs = Model.Module.Properties.Where(t => string.IsNullOrEmpty(t.PageTab) && !string.IsNullOrEmpty(t.SectionTab)).GroupBy(setting => setting.SectionTab).Select(group => group.First());
+                                <div class="tabcontrol" data-role="tabcontrol">
+                                    <ul class="tabs bg-grayDark">
+                                        @foreach (var stab in sectionTabs) {
+                                            <li>
+                                                <a href="#@stab.SectionTab">@stab.SectionTab</a>
+                                            </li>
+                                        }
+                                    </ul>
+                                    <div class="frames bg-grayDark fg-white">
+                                        @foreach (var stab in sectionTabs) {
+                                            <div class="frame  " style="background: #e8f1f4; color: #1d1d1d" id="@stab.SectionTab">
+                                                <div class="flex-grid" style="width: 100%">
+                                                    @{
+                                                        var distinctSettingsbyDisplayOrderForSectionTab = mods.Where(s => string.IsNullOrEmpty(s.PageTab) && s.SectionTab == stab.SectionTab).GroupBy(gd => gd.DisplayOrder).Select(group => group.First());
+                                                        foreach (var displayOrder in distinctSettingsbyDisplayOrderForSectionTab.OrderBy(d => d.DisplayOrder)) {
+                                                            <div class="row">
+                                                                @{
+                                                                    var order = displayOrder;
+                                                                    var settingsForSectionAndDisplayOrder = mods.Where(s => s.DisplayOrder == order.DisplayOrder && s.SectionTab == stab.SectionTab);
+                                                                    foreach (var setting in settingsForSectionAndDisplayOrder.OrderBy(d => d.DisplayColumn)) {
+                                                                        @Html.Partial("_input", new InputViewModel {Property = setting, Module = mod })
+                                                                    }
+                                                                }
+                                                            </div>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        if (Model.Module.Properties.Any(pt => !string.IsNullOrEmpty(pt.PageTab))) {
+            <div class="tabcontrol" data-role="tabcontrol">
+                <ul class="tabs">
+                    @{
+                        var pageTabs = Model.Module.Properties.Where(t => !string.IsNullOrEmpty(t.PageTab)).GroupBy(setting => setting.PageTab).Select(group => group.First());
+                        foreach (var tab in pageTabs) {
+                            <li>
+                                <a href="#@tab.PageTab">@tab.PageTab</a>
+                            </li>
+                        }
+                    }
+                </ul>
+                <div class="frames bg-grayDark fg-white">
+
+                    @foreach (var tab in pageTabs) {
+                        <div class="frame    bg-grayDark fg-white"  id="@tab.PageTab">
+                            @{
+                                var distinctSectionsForPageTab = Model.Module.Properties.Where(pt => pt.PageTab == tab.PageTab).GroupBy(setting => setting.Section).Select(group => group.First());
+                                foreach (var distinctSection in distinctSectionsForPageTab) {
+                                    var section = distinctSection;
+                                    var maxColumnsForSection = mods.Where(g => g.Section == distinctSection.Section && g.PageTab == tab.PageTab).Max(d => d.DisplayColumn);
+                                    <div class="row">
+                                        <div class="cell size12">
+                                            <div class="panel" data-role="panel">
+                                                <div class="heading">
+                                                    <span class="title">@distinctSection.Section</span>
+                                                </div>
+                                                <div class="content" style="height: 30%">
+                                                    @{
+                                                        var distinctSettingsbyDisplayOrder = mods.Where(s => s.Section == section.Section && s.PageTab == tab.PageTab && string.IsNullOrEmpty(s.SectionTab)).GroupBy(gd => gd.DisplayOrder).Select(group => group.First());
+                                                        foreach (var displayOrder in distinctSettingsbyDisplayOrder.OrderBy(d => d.DisplayOrder)) {
+                                                            <div class="row">
+                                                                @{
+                                                                    var section1 = distinctSection;
+                                                                    var order = displayOrder;
+                                                                    var settingsForSectionAndDisplayOrder = mods.Where(s => s.Section == section1.Section && s.DisplayOrder == order.DisplayOrder && s.PageTab == tab.PageTab);
+                                                                    foreach (var setting in settingsForSectionAndDisplayOrder.OrderBy(d => d.DisplayColumn)) {
+                                                                        @Html.Partial("_input", new InputViewModel {Property = setting, Module = mod})
+                                                                    }
+                                                                }
+                                                            </div>
+                                                        }
+                                                        if (Model.Module.Properties.Any(t => t.PageTab == tab.PageTab && !string.IsNullOrEmpty(t.SectionTab) && t.Section == section.Section)) {
+                                                            var sectionTabs = Model.Module.Properties.Where(t => t.PageTab == tab.PageTab && !string.IsNullOrEmpty(t.SectionTab) && t.Section == section.Section).GroupBy(setting => setting.SectionTab).Select(group => group.First());
+                                                            <div class="tabcontrol" data-role="tabcontrol">
+                                                                <ul class="tabs bg-grayDark">
+                                                                    @foreach (var stab in sectionTabs) {
+                                                                        <li>
+                                                                            <a href="#@stab.SectionTab">@stab.SectionTab</a>
+                                                                        </li>
+                                                                    }
+                                                                </ul>
+                                                                <div class="frames bg-grayDark fg-white">
+                                                                    @foreach (var stab in sectionTabs) {
+                                                                        <div class="frame  " style="background: #e8f1f4; color: #1d1d1d" id="@stab.SectionTab">
+                                                                            <div class="flex-grid" style="width: 100%">
+                                                                                @{
+                                                                                    var distinctSettingsbyDisplayOrderForSectionTab = mods.Where(s => s.Section == section.Section && s.PageTab == tab.PageTab && s.SectionTab == stab.SectionTab).GroupBy(gd => gd.DisplayOrder).Select(group => group.First());
+                                                                                    foreach (var displayOrder in distinctSettingsbyDisplayOrderForSectionTab.OrderBy(d => d.DisplayOrder)) {
+                                                                                        <div class="row">
+                                                                                            @{
+                                                                                                var section1 = distinctSection;
+                                                                                                var order = displayOrder;
+                                                                                                var settingsForSectionAndDisplayOrder = mods.Where(s => s.Section == section1.Section && s.DisplayOrder == order.DisplayOrder && s.PageTab == tab.PageTab && s.SectionTab == stab.SectionTab);
+                                                                                                foreach (var setting in settingsForSectionAndDisplayOrder.OrderBy(d => d.DisplayColumn)) {
+                                                                                                    @Html.Partial("_input", new InputViewModel {Property = setting, Module = mod })
+                                                                                                }
+                                                                                            }
+                                                                                        </div>
+                                                                                    }
+                                                                                }
+                                                                            </div>
+                                                                        </div>
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    }
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+
+                </div>
+            </div>
+        }
+    }

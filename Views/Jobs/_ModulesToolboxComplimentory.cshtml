@@ -1,0 +1,188 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@using System.Web.Script.Serialization
+@model inReachWebRebuild.ViewModels.ModulesToolboxViewModel
+@{
+    var serializer = new JavaScriptSerializer();
+}
+<div style="color: white;">
+    @Html.Raw(Model.ErrorDisplay?.Show(400, false))
+</div>
+
+@*<div class="panel" data-role="panel">
+    <div class="heading">
+        <span class="title">@Model.IdSuffix</span>
+    </div>
+    <div class="content  bg-grayDark fg-white">
+        <div class="flex-grid bg-grayDark" style="width: 100%" id="ComplimentoryModuleToolBoxGrid">
+
+            <span class="title">@($"{Model.Title}")</span>
+
+            @if (Model.Modules.Any()) {
+                var settings = Model.Modules;
+                var distinctSectionsNoPageTab = Model.Modules.Where(s => string.IsNullOrEmpty(s.PageTab) && string.IsNullOrEmpty(s.SectionTab)).GroupBy(setting => setting.Section).Select(group => group.First());
+                foreach (var distinctSection in distinctSectionsNoPageTab) {
+                    var maxColumnsForSection = settings.Where(g => g.Section == distinctSection.Section && string.IsNullOrEmpty(g.PageTab) && string.IsNullOrEmpty(g.SectionTab)).Max(d => d.DisplayColumn);
+                    <div class="row">
+                        <div class="cell size12">
+                            <div class="panel" data-role="panel">
+                                <div class="heading">
+                                    <span class="title">@distinctSection.Section</span>
+                                </div>
+                                <div class="content">
+                                    @{
+                                        var section = distinctSection;
+                                        var distinctSettingsbyDisplayOrder = settings.Where(s => s.Section == section.Section && string.IsNullOrEmpty(section.PageTab) && string.IsNullOrEmpty(section.SectionTab)).GroupBy(gd => gd.DisplayOrder).Select(group => group.First());
+                                        foreach (var displayOrder in distinctSettingsbyDisplayOrder.OrderBy(d => d.DisplayOrder)) {
+                                            <div class="row">
+                                                @{
+                                                    var section1 = distinctSection;
+                                                    var order = displayOrder;
+                                                    var settingsForSectionAndDisplayOrder = settings.Where(s => s.Section == section1.Section && s.DisplayOrder == order.DisplayOrder && string.IsNullOrEmpty(s.PageTab) && string.IsNullOrEmpty(s.SectionTab));
+                                                    foreach (var setting in settingsForSectionAndDisplayOrder.OrderBy(d => d.DisplayColumn)) {
+                                                        @Html.Partial("_ModuleTool", new ModuleToolViewModel {Module = setting})
+                                                    }
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                    @if (Model.Modules.Any(t => string.IsNullOrEmpty(t.PageTab) && !string.IsNullOrEmpty(t.SectionTab))) {
+                                        var sectionTabs = Model.Modules.Where(t => string.IsNullOrEmpty(t.PageTab) && !string.IsNullOrEmpty(t.SectionTab)).GroupBy(setting => setting.SectionTab).Select(group => group.First());
+                                        <div class="tabcontrol" data-role="tabcontrol">
+                                            <ul class="tabs bg-grayDark">
+                                                @foreach (var stab in sectionTabs) {
+                                                    <li>
+                                                        <a href=@($"#{@stab.SectionTab.Replace(" ", "")}{Model.IdSuffix}")>@stab.SectionTab</a>
+                                                    </li>
+                                                }
+                                            </ul>
+                                            <div class="frames bg-grayDark fg-white">
+                                                @foreach (var stab in sectionTabs) {
+                                                    <div class="frame  " style="background: #e8f1f4; color: #1d1d1d" id=@($"{@stab.SectionTab.Replace(" ", "")}{Model.IdSuffix}")>
+                                                        <div class="flex-grid" style="width: 100%">
+                                                            @{
+                                                                var distinctSettingsbyDisplayOrderForSectionTab = settings.Where(s => string.IsNullOrEmpty(s.PageTab) && s.SectionTab == stab.SectionTab).GroupBy(gd => gd.DisplayOrder).Select(group => group.First());
+                                                                foreach (var displayOrder in distinctSettingsbyDisplayOrderForSectionTab.OrderBy(d => d.DisplayOrder)) {
+                                                                    <div class="row">
+                                                                        @{
+                                                                            var order = displayOrder;
+                                                                            var settingsForSectionAndDisplayOrder = settings.Where(s => s.DisplayOrder == order.DisplayOrder && s.SectionTab == stab.SectionTab);
+                                                                            foreach (var setting in settingsForSectionAndDisplayOrder.OrderBy(d => d.DisplayColumn)) {
+                                                                                @Html.Partial("_ModuleTool", new ModuleToolViewModel {Module = setting})
+                                                                            }
+                                                                        }
+                                                                    </div>
+                                                                }
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                if (Model.Modules.Any(pt => !string.IsNullOrEmpty(pt.PageTab))) {
+                    <div class="tabcontrol" data-role="tabcontrol">
+                        <ul class="tabs">
+                            @{
+                                var pageTabs = Model.Modules.Where(t => !string.IsNullOrEmpty(t.PageTab)).GroupBy(setting => setting.PageTab).Select(group => group.First());
+                                foreach (var tab in pageTabs) {
+                                    <li>
+                                        <a href=@($"#{@tab.PageTab.Replace(" ", "")}{Model.IdSuffix}")>@tab.PageTab</a>
+                                    </li>
+                                }
+                            }
+                        </ul>
+                        <div class="frames bg-grayDark fg-white">
+
+                            @foreach (var tab in pageTabs) {
+                                <div class="frame   " style="background: #e8f1f4" id=@($"{@tab.PageTab.Replace(" ", "")}{Model.IdSuffix}")>
+                                    @{
+                                        var distinctSectionsForPageTab = Model.Modules.Where(pt => pt.PageTab == tab.PageTab).GroupBy(setting => setting.Section).Select(group => group.First());
+                                        foreach (var distinctSection in distinctSectionsForPageTab) {
+                                            var section = distinctSection;
+                                            var maxColumnsForSection = settings.Where(g => g.Section == distinctSection.Section && g.PageTab == tab.PageTab).Max(d => d.DisplayColumn);
+                                            <div class="row">
+                                                <div class="cell size12">
+                                                    <div class="panel" data-role="panel">
+                                                        <div class="heading">
+                                                            <span class="title">@distinctSection.Section</span>
+                                                        </div>
+                                                        <div class="content">
+                                                            @{
+                                                                var distinctSettingsbyDisplayOrder = settings.Where(s => s.Section == section.Section && s.PageTab == tab.PageTab && string.IsNullOrEmpty(s.SectionTab)).GroupBy(gd => gd.DisplayOrder).Select(group => group.First());
+                                                                foreach (var displayOrder in distinctSettingsbyDisplayOrder.OrderBy(d => d.DisplayOrder)) {
+                                                                    <div class="row">
+                                                                        @{
+                                                                            var section1 = distinctSection;
+                                                                            var order = displayOrder;
+                                                                            var settingsForSectionAndDisplayOrder = settings.Where(s => s.Section == section1.Section && s.DisplayOrder == order.DisplayOrder && s.PageTab == tab.PageTab);
+                                                                            foreach (var setting in settingsForSectionAndDisplayOrder.OrderBy(d => d.DisplayColumn)) {
+                                                                                @Html.Partial("_ModuleTool", new ModuleToolViewModel {Module = setting})
+                                                                            }
+                                                                        }
+                                                                    </div>
+                                                                }
+                                                                if (Model.Modules.Any(t => t.PageTab == tab.PageTab && !string.IsNullOrEmpty(t.SectionTab) && t.Section == section.Section)) {
+                                                                    var sectionTabs = Model.Modules.Where(t => t.PageTab == tab.PageTab && !string.IsNullOrEmpty(t.SectionTab) && t.Section == section.Section).GroupBy(setting => setting.SectionTab).Select(group => group.First());
+                                                                    <div class="tabcontrol" data-role="tabcontrol">
+                                                                        <ul class="tabs bg-grayDark">
+                                                                            @foreach (var stab in sectionTabs) {
+                                                                                <li>
+                                                                                    <a href=@($"#{@tab.PageTab.Replace(" ", "")}{Model.IdSuffix}")>@stab.SectionTab</a>
+                                                                                </li>
+                                                                            }
+                                                                        </ul>
+                                                                        <div class="frames bg-grayDark fg-white">
+                                                                            @foreach (var stab in sectionTabs) {
+                                                                                <div class="frame  " style="background: #e8f1f4; color: #1d1d1d" id=@($"{@tab.PageTab.Replace(" ", "")}{Model.IdSuffix}")>
+                                                                                    <div class="flex-grid" style="width: 100%">
+                                                                                        @{
+                                                                                            var distinctSettingsbyDisplayOrderForSectionTab = settings.Where(s => s.Section == section.Section && s.PageTab == tab.PageTab && s.SectionTab == stab.SectionTab).GroupBy(gd => gd.DisplayOrder).Select(group => group.First());
+                                                                                            foreach (var displayOrder in distinctSettingsbyDisplayOrderForSectionTab.OrderBy(d => d.DisplayOrder)) {
+                                                                                                <div class="row">
+                                                                                                    @{
+                                                                                                        var section1 = distinctSection;
+                                                                                                        var order = displayOrder;
+                                                                                                        var settingsForSectionAndDisplayOrder = settings.Where(s => s.Section == section1.Section && s.DisplayOrder == order.DisplayOrder && s.PageTab == tab.PageTab && s.SectionTab == stab.SectionTab);
+                                                                                                        foreach (var setting in settingsForSectionAndDisplayOrder.OrderBy(d => d.DisplayColumn)) {
+                                                                                                            @Html.Partial("_ModuleTool", new ModuleToolViewModel {Module = setting})
+                                                                                                        }
+                                                                                                    }
+                                                                                                </div>
+                                                                                            }
+                                                                                        }
+                                                                                    </div>
+                                                                                </div>
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                            }
+
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            }
+
+                        </div>
+                    </div>
+                }
+            }
+
+        </div>
+
+    </div>
+</div>*@
+<style>
+ 
+</style>

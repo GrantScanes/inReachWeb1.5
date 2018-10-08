@@ -1,0 +1,17 @@
+﻿@model inReachWebRebuild.ViewModels.PropertiesViewModel
+
+<span id="lblPropertiesTitle" style="font-size: medium; font-weight: bold;  ">@string.Format("Properties for {0} - {1}" , Model.RecordNumber, Model.Title)</span>
+<div id="divPropertiesContents" style="margin-top: 10px;">
+    <table class="table hovered striped" style="padding-left: 0px;">
+        @foreach (var prop in Model.Properties)
+        {
+            <tr style="background: transparent">
+            <td style="padding-top: 0px; padding-bottom: 0px; padding-left: 0px;">@Html.Raw(prop.Caption) </td>
+            <td style='padding-top:0px; padding-bottom:0px;padding-left:0px;'> @Html.Raw(prop.Value) </td>
+            </tr>
+        }
+       
+    </table>
+
+   
+</div>

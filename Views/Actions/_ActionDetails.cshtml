@@ -1,0 +1,66 @@
+﻿@model inReachWebRebuild.ViewModels.ActionViewModel
+@{
+    var serializer = new System.Web.Script.Serialization.JavaScriptSerializer { MaxJsonLength = int.MaxValue };
+    var jsonModel = serializer.Serialize(Model);
+}
+@if (Model.Action != null) {
+    <span id="lblActionDetailsTitle" style="font-size: medium; font-weight: bold;"> @($"{Model.Action.Name} for {Model.RecordNumber} - {Model.Title}")</span>
+
+} else {
+    <span id="lblActionDetailsTitle" style="font-size: medium; font-weight: bold;"> @($"New action for {Model.RecordNumber} - {Model.Title}")</span>
+ 
+}
+
+@if (Model.Action != null) {
+    <div style="float: right; margin-bottom: 3px;">
+        <button class="cycle-button bg-cyan fg-white bg-active-darkBlue" onclick="ReasignAction(@Model.Action.Uri, @Model.RecordUri)" id="BtnReassignActionSave" data-role="hint"   data-hint="Save">
+            <span class="mif-floppy-disk"></span>
+        </button>
+    </div>
+} else {
+    <div style="float: right; margin-bottom: 3px;">
+        <button class="cycle-button bg-cyan fg-white bg-active-darkBlue" onclick="AddAction(@Model.RecordUri)" id="BtnSaveAddAction" data-role="hint"   data-hint="Save">
+            <span class="mif-floppy-disk"></span>
+        </button>
+    </div>
+}
+
+<div style="color: red; display: @(Model.ErrorDisplay.HasMessage ? "block" : "none"); font-size: medium; font-weight: bold;" id="ReassignPartialError">
+    @Html.Raw(Model.ErrorDisplay.Show(400, false))
+</div>
+<div style="margin-bottom: 25px;"></div>
+<div class="heading">
+    <span class="title">Action:</span>
+</div>
+<div class="content">
+    <div style="width: 100%; padding-top: 5px; padding-bottom: 5px">
+        <input id="actionTypes"/>
+    </div>
+    
+</div>
+<div class="heading">
+    <span class="title">Responsible:</span>
+</div>
+<div class="content">
+    <div>
+        @*@Html.Partial("~/Views/Users/_LocationPickerPartial.cshtml", new LocationPickerViewModel())*@
+        <div style="border-style: none;">
+            <div style="width: 100%; padding-top: 5px; padding-bottom: 5px">
+                <input id="Actionlocations" />
+            </div>
+
+
+        </div>
+    </div>
+</div>
+@if (Model.Action!=null &&  Model.Action.CanChangeDuration) {
+    <div class="heading">
+        <span class="title">Duration:</span>
+    </div>
+    <div class="content" style="padding-top: 3px">
+
+        <input id="days" type="number" title="days" value="@Model.Action.DueDays" min="0" max="100" class="numerictb" />Days
+        <input id="hours" type="number" title="hours" value="@Model.Action.DueHours" min="0" max="23" class="numerictb"/>Hours
+        <input id="minutes" type="number" title="minutes" value="@Model.Action.DueMinutes" min="0" max="59" class="numerictb"/>Minutes
+    </div>
+}

@@ -1,0 +1,138 @@
+﻿@using Infor.Model.ApplicationServices
+@using Infor.Model.Enums
+@model inReachWebRebuild.ViewModels.InputViewModel
+@{
+    var setting = Model.Property;
+}  
+@{
+    var serializer = new System.Web.Script.Serialization.JavaScriptSerializer { MaxJsonLength = int.MaxValue };
+    var jsonModule = serializer.Serialize(Model.Module);
+}
+
+<div class="cell @($"size{setting.DisplayColumnSpan}") padding10">
+    <span class=" caption">@setting.Title</span>
+    <span class="mif-question fg-blue" data-role="hint" data-hint-background="bg-blue" data-hint-color="fg-white" data-hint-mode="1" data-hint="@setting.Desciption"> </span>
+    <br />
+    @switch (setting.ControlType)
+    {
+        case InforDataItemControlType.Location:
+            <div style="border-style: none;">
+                <div style="width: 100%; padding-top: 5px; padding-bottom: 5px">
+                    <input id="@setting.Key" class="moduleLocations"/>
+                </div>
+
+
+            </div>
+            break;
+        case InforDataItemControlType.FreeText:
+            <div class="input-control text" style="width: 100%">
+                <input type="text" id="@setting.Key" placeholder="@setting.Title" class="DataProp" value="@setting.ValueAsString" data-module="@Json.Encode(Model.Module)">
+            </div>
+            break;
+        case InforDataItemControlType.FreeTextMutiline:
+            <div class="input-control text" style="width: 100%">
+                <input type="text" id="@setting.Key" placeholder="@setting.Title" class="DataProp" value="@setting.ValueAsString" data-module="@Json.Encode(Model.Module)">
+            </div>
+            break;
+        case InforDataItemControlType.Date:
+            <input id="DueDate" class="Date" value="@setting.ValueAsDateTime" />
+            break;
+        case InforDataItemControlType.DateTime:
+            <input id="DueDate" class="Date" value="@setting.ValueAsDateTime" />
+            break;
+        case InforDataItemControlType.Integer:
+            <div class="input-control text">
+                <input id="@setting.Key" placeholder="@setting.Title" class="DataProp numerictb" value="@setting.ValueAsLong" data-module="@Json.Encode(Model.Module)">
+            </div>
+            break;
+        case InforDataItemControlType.Time:
+            
+            <div class="input-control text">
+                <input id="@setting.Key" value="@setting.Value" title="timepicker" style="width: 100%;" class="DataProp time"  data-module="@Json.Encode(Model.Module)"/>
+            </div>
+            break;
+        case InforDataItemControlType.Option:
+            <div class="input-control select">
+                <select id="@setting.Key" class="DataProp kcombo" data-module="@jsonModule">
+                    @if (setting.OptionValues != null)
+                    {
+                        if (string.IsNullOrEmpty(setting.OptionsValueField)) {
+                            foreach (var o in setting.OptionValues)
+                            {
+                                <option value="@o" @(setting.ValueAsString != null ? o == setting.ValueAsString ? "selected" : "" : "")>@o</option>
+                            }
+                        } else {
+                            foreach (var o in setting.OptionValues)
+                            {
+                                <option value="@(o.GetType().GetProperty(setting.OptionsValueField)?.GetValue(o, null))" @(setting.ValueAsString != null ? o.GetType().GetProperty(setting.OptionsValueField)?.GetValue(o, null).ToString() == setting.ValueAsString ? "selected" : "" : "")>@(o.GetType().GetProperty(setting.OptionsTextField)?.GetValue(o, null))</option>
+                            }
+                        }
+                       
+                    }
+                    else
+                    {
+                        <div class="input-control text" style="width: 100%">
+                            <input type="text" id="@setting.Key" placeholder="@setting.Title" class="DataProp" value="@setting.ValueAsString"  data-module="@Json.Encode(Model.Module)">
+                        </div>
+                    }
+
+
+                </select>
+            </div>
+            break;
+        case InforDataItemControlType.Boolean:
+            <label class="switch">
+                <input type="checkbox" id="@setting.Key" class="DataProp" checked="@setting.ValueAsBoolean"  data-module="@Json.Encode(Model.Module)">
+                <span class="check"></span>
+            </label>
+            break;
+        case InforDataItemControlType.TrimProperties:
+      
+            <div class="flex-grid  " style="height: 30%; overflow: auto">
+                <div class="row" style="height: 100%">
+                    <div class="cell size3" style="height: 100%;">
+                        <div class="input-control text">
+                            <input type="text" placeholder="filter properties..." onkeyup="filterProperties(this)" class="k-textbox" id="propertiesFilter">
+                        </div>
+                        <button class="button cycle-button" onclick="clearfilterProperties()" style="float: right; height: 25px; margin-top: 5px; min-width: 0px; position: absolute; width: 25px;">
+                            <span class="mif-not"></span>
+                        </button>
+                        <div   style="height: 93%; overflow: auto">
+                            <div class="k-content">
+                                <div id="AvailableFields"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cell size1 " id="ModuleRemovePropertyDropArea">
+                        <div class="ribbed-grayLight fg-white padding10 text-shadow" style="height: 100%; margin-top: 9px; width: 100%;">
+                            Drop here to remove
+                            <div class="cell size2">
+                                <div style="text-align: center">
+                                    <button class="button cycle-button" onclick="AddField()">
+                                        <span class="mif-chevron-right"></span>
+                                    </button>
+                                </div>
+                                <div style="text-align: center">
+                                    <button class="button cycle-button" onclick="RemoveField()">
+                                        <span class="mif-chevron-left"></span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="cell size12">
+                        <div  id="@setting.Key" class="AddedFields" style="min-height: 100%; overflow: auto">
+                            <span style="padding-left: 5px;">Drop properties below</span>
+                            <div class="listview list-type-tiles" id="addedProps" style="height: 100%; margin-top: 10px;" data-role="listview"  data-module="@Json.Encode(Model.Module)">
+                            </div>
+                           
+                        </div>
+                    </div>
+                </div>
+            </div>
+            break;
+        default:
+            throw new ArgumentOutOfRangeException();
+    }
+ 
+</div>
